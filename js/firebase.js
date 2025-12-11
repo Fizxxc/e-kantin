@@ -18,9 +18,10 @@ export const app = initializeApp({
   authDomain: "crht-proj.firebaseapp.com",
   databaseURL: "https://crht-proj-default-rtdb.firebaseio.com",
   projectId: "crht-proj",
-  storageBucket: "crht-proj.appspot.com",
-  messagingSenderId: "222222",
-  appId: "1:22222:web:xxxxx"
+  storageBucket: "crht-proj.firebasestorage.app",
+  messagingSenderId: "957104910274",
+  appId: "1:957104910274:web:5a7463a011d5f68583305b",
+  measurementId: "G-4BTK874XF4"
 });
 
 export const auth = getAuth(app);
