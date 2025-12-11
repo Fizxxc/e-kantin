@@ -1,42 +1,41 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Admin Register</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Register - Kantin Digital</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="min-h-screen bg-gray-100 flex items-center justify-center p-6">
-  <div class="max-w-md w-full bg-white p-6 rounded-xl shadow">
-    <h2 class="text-xl font-bold mb-4">Register Admin</h2>
-    <input id="email" class="w-full p-2 border rounded mb-3" placeholder="Email admin" />
-    <input id="pass" type="password" class="w-full p-2 border rounded mb-3" placeholder="Password" />
-    <div class="flex gap-2">
-      <button onclick="doRegister()" class="flex-1 px-4 py-2 bg-green-600 text-white rounded">Register</button>
-      <a href="admin-login.html" class="flex-1 px-4 py-2 border rounded text-center">Login</a>
-    </div>
-    <div class="mt-3 text-sm text-slate-500">Setelah register, akun akan langsung dapat login.</div>
+<div class="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl">
+  <h2 class="text-2xl font-bold mb-6 text-center">Register Admin</h2>
+  <input id="email" class="w-full p-3 border rounded mb-4" placeholder="Email admin" />
+  <input id="pass" type="password" class="w-full p-3 border rounded mb-6" placeholder="Password" />
+  <div class="flex gap-2">
+    <button onclick="doRegister()" class="flex-1 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700">Register</button>
+    <a href="admin-login.html" class="flex-1 py-3 border rounded-xl text-center">Login</a>
   </div>
+</div>
 
-  <script type="module">
-    import { registerUser, db } from './js/firebase.js';
-    import { ref, set } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js';
+<script type="module">
+import { registerUser, db } from './js/firebase.js';
+import { ref, set } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
-    async function doRegister(){
-      const e = document.getElementById('email').value;
-      const p = document.getElementById('pass').value;
-      if(!e||!p) return Swal.fire('Error','Isi email & password','error');
-      try{
-        const cred = await registerUser(e,p);
-        const uid = cred.user.uid;
-        // write role into DB /users/{uid}
-        await set(ref(db, `users/${uid}`), { email: e, role: 'admin', createdAt: Date.now() });
-        Swal.fire('Sukses','Admin terdaftar, silakan login','success').then(()=> location.href='admin-login.html');
-      }catch(err){
-        Swal.fire('Gagal', err.message || 'Gagal register', 'error');
-      }
-    }
-  </script>
+async function doRegister(){
+  const email = document.getElementById('email').value.trim();
+  const pass = document.getElementById('pass').value.trim();
+  if(!email||!pass) return Swal.fire('Error','Isi email & password','warning');
+
+  try{
+    const cred = await registerUser(email, pass);
+    const uid = cred.user.uid;
+    await set(ref(db, `users/${uid}`), { email, role:'admin', createdAt:Date.now() });
+    Swal.fire('Sukses','Admin terdaftar, silakan login','success').then(()=> location.href='admin-login.html');
+  }catch(err){
+    Swal.fire('Gagal', err.message || 'Gagal register', 'error');
+  }
+}
+</script>
 </body>
 </html>
