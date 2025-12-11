@@ -3,40 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Login - Kantin Digital</title>
+<title>Login Admin</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.lordicon.com/lusqsztk.js"></script>
 </head>
-<body class="min-h-screen bg-gray-100 flex items-center justify-center p-6">
-<div class="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl">
-  <h2 class="text-2xl font-bold mb-6 text-center">Login Admin</h2>
-  <input id="email" class="w-full p-3 border rounded mb-4" placeholder="Email admin" />
-  <input id="pass" type="password" class="w-full p-3 border rounded mb-6" placeholder="Password" />
-  <button onclick="doLogin()" class="w-full py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700">Login</button>
-</div>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
+    <h2 class="text-2xl font-bold mb-6 text-center">Login Admin</h2>
+    <form onsubmit="return false;" class="space-y-4">
+      <input id="authEmail" type="email" placeholder="Email Admin" class="w-full p-3 border rounded" required>
+      <input id="authPassword" type="password" placeholder="Password" class="w-full p-3 border rounded" required>
+      <button onclick="doLogin()" class="w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 btn-primary">
+        <lord-icon src="https://cdn.lordicon.com/lupuorrc.json" trigger="hover" colors="primary:#ffffff" style="width:24px;height:24px"></lord-icon>
+        Login
+      </button>
+    </form>
+    <p class="mt-4 text-sm text-gray-500 text-center">Belum punya akun admin? <a href="admin-register.html" class="text-red-600">Register</a></p>
+  </div>
 
-<script type="module">
-import { login, db } from './js/firebase.js';
-import { ref, get } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+  <script type="module">
+    import { login } from './js/firebase.js';
 
-async function doLogin(){
-  const email = document.getElementById('email').value.trim();
-  const pass = document.getElementById('pass').value.trim();
-  if(!email||!pass) return Swal.fire('Error','Isi email & password','warning');
+    async function doLogin() {
+      const email = document.getElementById('authEmail').value;
+      const password = document.getElementById('authPassword').value;
+      if(!email || !password) return Swal.fire('Error','Isi email & password','error');
+      try {
+        await login(email, password, true); // true = admin login
+        Swal.fire('Sukses','Login admin berhasil','success').then(()=>location.href='/dashboard');
+      } catch(e) {
+        Swal.fire('Error', e.message || 'Gagal login', 'error');
+      }
+    }
 
-  try{
-    const cred = await login(email, pass);
-    const uid = cred.user.uid;
-    const snapshot = await get(ref(db, `users/${uid}`));
-    const data = snapshot.val();
-    if(!data) throw new Error('Data tidak ditemukan');
-    if(data.role!=='admin') throw new Error('Bukan akun admin');
-
-    Swal.fire('Sukses','Login berhasil','success').then(()=> location.href='admin-dashboard.html');
-  }catch(err){
-    Swal.fire('Gagal Login', err.message || 'Login gagal', 'error');
-  }
-}
-</script>
+    window.doLogin = doLogin;
+  </script>
 </body>
 </html>

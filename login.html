@@ -3,49 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>User Login - Kantin Digital</title>
+<title>Login User</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<style>
-  body { background: linear-gradient(135deg,#667eea,#764ba2); font-family: 'Poppins', sans-serif; }
-  .card-animate { animation: scaleIn 0.3s ease; }
-  @keyframes scaleIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-</style>
+<script src="https://cdn.lordicon.com/lusqsztk.js"></script>
 </head>
-<body class="h-screen flex items-center justify-center">
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
+    <h2 class="text-2xl font-bold mb-6 text-center">Login User</h2>
+    <form onsubmit="return false;" class="space-y-4">
+      <input id="authEmail" type="email" placeholder="Email" class="w-full p-3 border rounded" required>
+      <input id="authPassword" type="password" placeholder="Password" class="w-full p-3 border rounded" required>
+      <button onclick="doLogin()" class="w-full py-3 bg-indigo-600 text-white rounded-lg flex items-center justify-center gap-2 btn-primary">
+        <lord-icon src="https://cdn.lordicon.com/mrdiiocb.json" trigger="hover" colors="primary:#ffffff" style="width:24px;height:24px"></lord-icon>
+        Login
+      </button>
+    </form>
+    <p class="mt-4 text-sm text-gray-500 text-center">Belum punya akun? <a href="register.html" class="text-indigo-600">Register</a></p>
+  </div>
 
-<div class="card-animate max-w-md w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-2xl">
-  <h2 class="text-3xl font-bold text-white text-center mb-6">Login User</h2>
-  <input id="email" type="email" placeholder="Email" class="w-full p-3 mb-4 rounded-xl bg-white/20 text-white placeholder-white/70 outline-none"/>
-  <input id="pass" type="password" placeholder="Password" class="w-full p-3 mb-4 rounded-xl bg-white/20 text-white placeholder-white/70 outline-none"/>
-  <button onclick="doLogin()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg mb-4">Login</button>
-  <p class="text-center text-white/70 text-sm">
-    Belum punya akun? <a href="register.html" class="underline hover:text-white">Daftar di sini</a>
-  </p>
-</div>
+  <script type="module">
+    import { login } from './js/firebase.js';
 
-<script type="module">
-import { login, db } from './js/firebase.js';
-import { ref, get } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+    async function doLogin() {
+      const email = document.getElementById('authEmail').value;
+      const password = document.getElementById('authPassword').value;
+      if(!email || !password) return Swal.fire('Error','Isi email & password','error');
+      try {
+        await login(email, password);
+        Swal.fire('Sukses','Login berhasil','success').then(()=>location.href='index.html');
+      } catch(e) {
+        Swal.fire('Error', e.message || 'Gagal login', 'error');
+      }
+    }
 
-async function doLogin(){
-  const email = document.getElementById('email').value.trim();
-  const pass = document.getElementById('pass').value.trim();
-  if(!email || !pass) return Swal.fire('Oops!','Isi email dan password','warning');
-  
-  try {
-    const cred = await login(email, pass);
-    const uid = cred.user.uid;
-    const snapshot = await get(ref(db, `users/${uid}`));
-    const data = snapshot.val();
-    if(!data) throw new Error('Data user tidak ditemukan');
-    if(data.role !== 'user') throw new Error('Bukan akun user');
-
-    Swal.fire('Sukses!','Login berhasil','success').then(()=> location.href='index.html');
-  } catch(err){
-    Swal.fire('Gagal Login', err.message || 'Login salah', 'error');
-  }
-}
-</script>
+    window.doLogin = doLogin; // agar onclick di HTML bisa bekerja
+  </script>
 </body>
 </html>

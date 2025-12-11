@@ -3,45 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Register User - Kantin Digital</title>
+<title>Register User</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<style>
-  body { background: linear-gradient(135deg,#667eea,#764ba2); font-family: 'Poppins', sans-serif; }
-  .card-animate { animation: scaleIn 0.3s ease; }
-  @keyframes scaleIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-</style>
+<script src="https://cdn.lordicon.com/lusqsztk.js"></script>
 </head>
-<body class="h-screen flex items-center justify-center">
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
+    <h2 class="text-2xl font-bold mb-6 text-center">Register User</h2>
+    <form onsubmit="return false;" class="space-y-4">
+      <input id="authEmail" type="email" placeholder="Email" class="w-full p-3 border rounded" required>
+      <input id="authPassword" type="password" placeholder="Password" class="w-full p-3 border rounded" required>
+      <button onclick="doRegister()" class="w-full py-3 bg-green-600 text-white rounded-lg flex items-center justify-center gap-2 btn-primary">
+        <lord-icon src="https://cdn.lordicon.com/slkvcfos.json" trigger="hover" colors="primary:#ffffff" style="width:24px;height:24px"></lord-icon>
+        Register
+      </button>
+    </form>
+    <p class="mt-4 text-sm text-gray-500 text-center">Sudah punya akun? <a href="login.html" class="text-indigo-600">Login</a></p>
+  </div>
 
-<div class="card-animate max-w-md w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-2xl">
-  <h2 class="text-3xl font-bold text-white text-center mb-6">Daftar User</h2>
-  <input id="email" type="email" placeholder="Email" class="w-full p-3 mb-4 rounded-xl bg-white/20 text-white placeholder-white/70 outline-none"/>
-  <input id="pass" type="password" placeholder="Password" class="w-full p-3 mb-4 rounded-xl bg-white/20 text-white placeholder-white/70 outline-none"/>
-  <button onclick="doRegister()" class="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl shadow-lg mb-4">Daftar</button>
-  <p class="text-center text-white/70 text-sm">
-    Sudah punya akun? <a href="login.html" class="underline hover:text-white">Login di sini</a>
-  </p>
-</div>
+  <script type="module">
+    import { registerUser } from './js/firebase.js';
 
-<script type="module">
-import { registerUser, db } from './js/firebase.js';
-import { ref, set } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+    async function doRegister() {
+      const email = document.getElementById('authEmail').value;
+      const password = document.getElementById('authPassword').value;
+      if(!email || !password) return Swal.fire('Error','Isi email & password','error');
+      try {
+        await registerUser(email, password);
+        Swal.fire('Sukses','Akun terdaftar','success').then(()=>location.href='login.html');
+      } catch(e) {
+        Swal.fire('Error', e.message || 'Gagal register', 'error');
+      }
+    }
 
-async function doRegister(){
-  const email = document.getElementById('email').value.trim();
-  const pass = document.getElementById('pass').value.trim();
-  if(!email || !pass) return Swal.fire('Oops!','Isi email dan password','warning');
-
-  try{
-    const cred = await registerUser(email, pass);
-    const uid = cred.user.uid;
-    await set(ref(db, `users/${uid}`), { email, role:'user', createdAt:Date.now() });
-    Swal.fire('Sukses!','Akun berhasil dibuat','success').then(()=> location.href='login.html');
-  }catch(err){
-    Swal.fire('Gagal Register', err.message || 'Terjadi kesalahan', 'error');
-  }
-}
-</script>
+    window.doRegister = doRegister;
+  </script>
 </body>
 </html>

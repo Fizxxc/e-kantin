@@ -102,7 +102,7 @@
   stateChanged(u => {
     adminUser = u;
     if(!u || u.role!=='admin'){
-      location.href = 'admin-login.html';
+      location.href = '/admin-login';
     }
   });
 
@@ -262,7 +262,7 @@
   window.closeScanner=closeScanner;
   window.refreshOrders=()=> listenOrders(renderOrders);
 
-  async function doLogout(){ try{ await logout(); location.href='admin-login.html'; } catch(e){ location.href='admin-login.html'; } }
+  async function doLogout(){ try{ await logout(); location.href='/admin-login'; } catch(e){ location.href='/admin-login'; } }
   window.doLogout=doLogout;
 
 </script>
