@@ -185,14 +185,15 @@
   </div>
 
   <script type="module">
+    // --- Module Import ---
     import { listenMenu, placeOrder, listenOrders, login, registerUser, logout, stateChanged } from './js/firebase.js';
 
     let user = null, cart = [];
     const menuGrid = document.getElementById('menuGrid');
     const sideMenu = document.getElementById('sideMenu');
 
+    // --- Render Menu ---
     listenMenu(renderMenu);
-
     function renderMenu(data) {
       sideMenu.innerHTML = data.map(m => `<div class="flex justify-between"><div>${m.title}</div><div>Rp ${Number(m.price).toLocaleString()}</div></div>`).join('');
       menuGrid.innerHTML = data.map(m => `
@@ -213,6 +214,8 @@
     }
 
     function escapeHtml(s) { return (s || '').replace(/'/g, "\\'").replace(/"/g, '\\"'); }
+
+    // --- Cart Functions ---
     function addToCart(id, title, price, img) {
       const f = cart.find(x => x.id === id);
       if (f) f.qty++; else cart.push({ id, title, price: Number(price), img, qty: 1 });
@@ -224,7 +227,6 @@
         timer: 1000, showConfirmButton: false
       });
     }
-
     function renderCartCount() { document.getElementById('cartCount').textContent = cart.reduce((s, i) => s + i.qty, 0); }
     function openCart() { document.getElementById('cartModal').classList.remove('hidden'); renderCartItems(); }
     function closeCart() { document.getElementById('cartModal').classList.add('hidden'); }
@@ -235,31 +237,116 @@
       else wrap.innerHTML = cart.map(i => `<div class="flex items-center justify-between border-b pb-2"><div><div class="font-semibold">${i.title}</div><div class="text-sm text-slate-500">Rp ${i.price.toLocaleString()} x ${i.qty}</div></div><div class="flex items-center gap-2"><button class="px-2 py-1 bg-gray-200 rounded" onclick="dec('${i.id}')">-</button><div>${i.qty}</div><button class="px-2 py-1 bg-gray-200 rounded" onclick="inc('${i.id}')">+</button></div></div>`).join('');
       document.getElementById('cartTotal').textContent = cart.reduce((s, i) => s + (i.price * i.qty), 0).toLocaleString();
     }
-
     function inc(id) { const f = cart.find(c => c.id === id); if (f) { f.qty++; renderCartItems(); renderCartCount(); } }
     function dec(id) { const f = cart.find(c => c.id === id); if (f) { f.qty = Math.max(0, f.qty - 1); cart = cart.filter(i => i.qty > 0); renderCartItems(); renderCartCount(); } }
 
+    // --- Auth Functions ---
     function openAuth() { document.getElementById('authModal').classList.remove('hidden'); }
     function closeAuth() { document.getElementById('authModal').classList.add('hidden'); }
-    async function doRegister() { const e = document.getElementById('authEmail').value, p = document.getElementById('authPassword').value; if (!e || !p) return Swal.fire('Error', 'Isi email & password', 'error'); try { await registerUser(e, p); Swal.fire('Sukses', 'Akun terdaftar', 'success'); closeAuth(); } catch (err) { Swal.fire('Gagal', err.message || 'Gagal register', 'error'); } }
-    async function doLogin() { const e = document.getElementById('authEmail').value, p = document.getElementById('authPassword').value; if (!e || !p) return Swal.fire('Error', 'Isi email & password', 'error'); try { await login(e, p); Swal.fire('Sukses', 'Login berhasil', 'success'); closeAuth(); } catch (err) { Swal.fire('Gagal', err.message || 'Gagal login', 'error'); } }
+    async function doRegister() {
+      const e = document.getElementById('authEmail').value, p = document.getElementById('authPassword').value;
+      if (!e || !p) return Swal.fire('Error', 'Isi email & password', 'error');
+      try { await registerUser(e, p); Swal.fire('Sukses', 'Akun terdaftar', 'success'); closeAuth(); }
+      catch (err) { Swal.fire('Gagal', err.message || 'Gagal register', 'error'); }
+    }
+    async function doLogin() {
+      const e = document.getElementById('authEmail').value, p = document.getElementById('authPassword').value;
+      if (!e || !p) return Swal.fire('Error', 'Isi email & password', 'error');
+      try { await login(e, p); Swal.fire('Sukses', 'Login berhasil', 'success'); closeAuth(); }
+      catch (err) { Swal.fire('Gagal', err.message || 'Gagal login', 'error'); }
+    }
 
+    // --- Checkout / Payment ---
+    function openCheckout() {
+      if (!user) return Swal.fire('Login dulu', 'Silakan login untuk checkout', 'info').then(() => openAuth());
+      if (cart.length === 0) return Swal.fire('Kosong', 'Keranjang kosong', 'info');
+      document.getElementById('checkoutModal').classList.remove('hidden');
+      QRCode.toCanvas(document.getElementById('cashQR'), 'ready-to-pay', { width: 180 }).catch(console.error);
+    }
     function closeCheckout() { document.getElementById('checkoutModal').classList.add('hidden'); }
-    function openCheckout() { if (!user) return Swal.fire('Login dulu', 'Silakan login untuk checkout', 'info').then(() => openAuth()); if (cart.length === 0) return Swal.fire('Kosong', 'Keranjang kosong', 'info'); document.getElementById('checkoutModal').classList.remove('hidden'); QRCode.toCanvas(document.getElementById('cashQR'), 'ready-to-pay', { width: 180 }).catch(console.error); }
+
     async function confirmPayment(method) {
-      if (!user) return Swal.fire('Login dulu', 'Login sebelum pesan', 'info').then(() => openAuth()); const total = cart.reduce((s, i) => s + i.price * i.qty, 0); const order = { items: cart, total, payment: { method, status: method === 'qris' ? 'waiting_verif' : 'waiting_scan' }, status: 'queued', called: false }; try { const id = await placeOrder(user.uid, order); clearCart(); closeCheckout(); if (method === 'cash') { Swal.fire({ title: 'Tunjukkan barcode ke kasir', html: `<div id="orderqr" class="flex justify-center"></div><p class="mt-3 text-sm text-slate-500">Order ID: ${id}</p>`, didOpen: () => QRCode.toCanvas(document.getElementById('orderqr'), id, { width: 240 }) }); } else Swal.fire('Pesanan Diterima', 'Silakan tunggu verifikasi', 'success'); } catch (err) { console.error(err); Swal.fire('Error', 'Gagal membuat pesanan', 'error'); }
-
-      stateChanged(u => { user = u; if (user) { document.getElementById('greeting').textContent = `${greetByTime()}, ${user.email.split('@')[0]}`; document.getElementById('authBtn').textContent = 'Logout'; document.getElementById('authBtn').onclick = async () => { await logout(); location.reload(); }; document.getElementById('userNote').textContent = 'Anda akan diberi notifikasi saat pesanan dipanggil.'; } else { document.getElementById('greeting').textContent = 'Selamat Datang!'; document.getElementById('authBtn').textContent = 'Login / Register'; document.getElementById('authBtn').onclick = openAuth; document.getElementById('userNote').textContent = 'Login untuk memesan dan menerima notifikasi.'; } });
-
-      listenOrders(orders => { orders.forEach(o => { if (!user) return; if (o.userId === user.uid && o.called && !o._notified) { o._notified = true; const text = `Nomor antrian Anda: ${o.queue}. Silakan ambil pesanan.`; Swal.fire({ title: 'Dipanggil', html: `<lord-icon src="https://cdn.lordicon.com/hbvxovfk.json" trigger="loop" style="width:48px;height:48px"></lord-icon>${text}`, icon: 'info' }); speakTTS(text); if (Notification && Notification.permission === 'granted') new Notification('Kantin: Pesanan Dipanggil', { body: text }); else if (Notification && Notification.permission !== 'denied') Notification.requestPermission().then(p => { if (p === 'granted') new Notification('Kantin: Pesanan Dipanggil', { body: text }); }); } }); });
-
-      function greetByTime() { const hr = new Date().getHours(); if (hr < 11) return 'Selamat Pagi'; if (hr < 15) return 'Selamat Siang'; if (hr < 18) return 'Selamat Sore'; return 'Selamat Malam'; }
-      function speakTTS(text) {
-        try { const ut = new SpeechSynthesisUtterance(text); ut.lang = 'id-ID'; speechSynthesis.speak(ut); } catch (e) { console.warn('TTS error', e); }
-
+      if (!user) return Swal.fire('Login dulu', 'Login sebelum pesan', 'info').then(() => openAuth());
+      const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+      const order = { items: cart, total, payment: { method, status: method === 'qris' ? 'waiting_verif' : 'waiting_scan' }, status: 'queued', called: false };
+      try {
+        const id = await placeOrder(user.uid, order);
+        clearCart();
+        closeCheckout();
+        if (method === 'cash') {
+          Swal.fire({
+            title: 'Tunjukkan barcode ke kasir',
+            html: `<div id="orderqr" class="flex justify-center"></div><p class="mt-3 text-sm text-slate-500">Order ID: ${id}</p>`,
+            didOpen: () => QRCode.toCanvas(document.getElementById('orderqr'), id, { width: 240 })
+          });
+        } else Swal.fire('Pesanan Diterima', 'Silakan tunggu verifikasi', 'success');
+      } catch (err) {
+        console.error(err); Swal.fire('Error', 'Gagal membuat pesanan', 'error');
       }
     }
-        window.addToCart = addToCart; window.openCart = openCart; window.closeCart = closeCart; window.clearCart = clearCart; window.inc = inc; window.dec = dec; window.openAuth = openAuth; window.closeAuth = closeAuth; window.doLogin = doLogin; window.doRegister = doRegister; window.openCheckout = openCheckout; window.closeCheckout = closeCheckout; window.confirmPayment = confirmPayment;
+
+    // --- Helper Functions ---
+    function greetByTime() {
+      const hr = new Date().getHours();
+      if (hr < 11) return 'Selamat Pagi';
+      if (hr < 15) return 'Selamat Siang';
+      if (hr < 18) return 'Selamat Sore';
+      return 'Selamat Malam';
+    }
+    function speakTTS(text) {
+      try { const ut = new SpeechSynthesisUtterance(text); ut.lang = 'id-ID'; speechSynthesis.speak(ut); }
+      catch (e) { console.warn('TTS error', e); }
+    }
+
+    // --- State Listener (di luar confirmPayment) ---
+    stateChanged(u => {
+      user = u;
+      if (user) {
+        document.getElementById('greeting').textContent = `${greetByTime()}, ${user.email.split('@')[0]}`;
+        document.getElementById('authBtn').textContent = 'Logout';
+        document.getElementById('authBtn').onclick = async () => { await logout(); location.reload(); };
+        document.getElementById('userNote').textContent = 'Anda akan diberi notifikasi saat pesanan dipanggil.';
+      } else {
+        document.getElementById('greeting').textContent = 'Selamat Datang!';
+        document.getElementById('authBtn').textContent = 'Login / Register';
+        document.getElementById('authBtn').onclick = openAuth;
+        document.getElementById('userNote').textContent = 'Login untuk memesan dan menerima notifikasi.';
+      }
+    });
+
+    // --- Listen Orders (di luar confirmPayment) ---
+    listenOrders(orders => {
+      orders.forEach(o => {
+        if (!user) return;
+        if (o.userId === user.uid && o.called && !o._notified) {
+          o._notified = true;
+          const text = `Nomor antrian Anda: ${o.queue}. Silakan ambil pesanan.`;
+          Swal.fire({
+            title: 'Dipanggil',
+            html: `<lord-icon src="https://cdn.lordicon.com/hbvxovfk.json" trigger="loop" style="width:48px;height:48px"></lord-icon>${text}`,
+            icon: 'info'
+          });
+          speakTTS(text);
+          if (Notification && Notification.permission === 'granted') new Notification('Kantin: Pesanan Dipanggil', { body: text });
+          else if (Notification && Notification.permission !== 'denied') Notification.requestPermission().then(p => { if (p === 'granted') new Notification('Kantin: Pesanan Dipanggil', { body: text }); });
+        }
+      });
+    });
+
+    // --- Expose Functions to Global ---
+    window.addToCart = addToCart;
+    window.openCart = openCart;
+    window.closeCart = closeCart;
+    window.clearCart = clearCart;
+    window.inc = inc;
+    window.dec = dec;
+    window.openAuth = openAuth;
+    window.closeAuth = closeAuth;
+    window.doLogin = doLogin;
+    window.doRegister = doRegister;
+    window.openCheckout = openCheckout;
+    window.closeCheckout = closeCheckout;
+    window.confirmPayment = confirmPayment;
   </script>
 
 </body>
