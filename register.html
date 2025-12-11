@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register User - Kantin Digital</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg,#667eea,#764ba2);
+      font-family: 'Poppins', sans-serif;
+    }
+    .card-animate {
+      animation: scaleIn 0.3s ease;
+    }
+    @keyframes scaleIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="h-screen flex items-center justify-center">
+
+  <div class="card-animate max-w-md w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-2xl">
+    <h2 class="text-3xl font-bold text-white text-center mb-6">Daftar User</h2>
+
+    <input id="email" type="email" placeholder="Email"
+           class="w-full p-3 mb-4 rounded-xl bg-white/20 text-white placeholder-white/70 outline-none"/>
+
+    <input id="pass" type="password" placeholder="Password"
+           class="w-full p-3 mb-4 rounded-xl bg-white/20 text-white placeholder-white/70 outline-none"/>
+
+    <button onclick="reg()"
+            class="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl shadow-lg mb-4">
+      Daftar
+    </button>
+
+    <p class="text-center text-white/70 text-sm">
+      Sudah punya akun? 
+      <a href="login.html" class="underline hover:text-white">Login di sini</a>
+    </p>
+  </div>
+
+  <script type="module">
+    import { registerUser } from "./js/firebase.js";
+
+    async function reg(){
+      const e = document.getElementById('email').value;
+      const p = document.getElementById('pass').value;
+
+      if(!e || !p) return Swal.fire('Oops!','Isi email dan password','warning');
+
+      try {
+        await registerUser(e,p);
+        Swal.fire('Sukses!','Akun berhasil dibuat','success')
+          .then(()=> location.href='login.html');
+      } catch(err){
+        Swal.fire('Gagal Register', err.message || 'Terjadi kesalahan', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

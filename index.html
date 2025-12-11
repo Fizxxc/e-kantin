@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Kantin Sekolah - Pesan Online</title>
+
+  <!-- Tailwind + SweetAlert2 + QR Generator -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+
+  <style>
+    body { background: #f8fafc; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+    .menu-card{ transition: transform .15s ease, box-shadow .15s ease; }
+    .menu-card:hover{ transform: translateY(-6px); box-shadow: 0 8px 30px rgba(2,6,23,0.08); }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <div id="greeting" class="text-lg font-semibold text-slate-800">Selamat Datang!</div>
+        <div id="userNote" class="text-sm text-slate-500">Login untuk memesan dan menerima notifikasi.</div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <button id="cartBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg" onclick="openCart()">Keranjang (<span id="cartCount">0</span>)</button>
+        </div>
+        <button id="authBtn" class="px-4 py-2 bg-white border rounded-lg" onclick="openAuth()">Login / Register</button>
+      </div>
+    </header>
+
+    <main class="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <aside class="md:col-span-1 bg-white rounded-xl p-4 shadow">
+        <h3 class="font-semibold mb-3">Daftar Menu</h3>
+        <div id="sideMenu" class="space-y-3 text-sm text-slate-600"></div>
+      </aside>
+
+      <section class="md:col-span-3">
+        <div class="bg-white rounded-xl p-4 shadow mb-4 flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-bold">Pilih Menu</h2>
+            <p class="text-sm text-slate-500">Pilih makanan/minuman dan tambahkan ke keranjang.</p>
+          </div>
+          <div>
+            <span class="text-sm text-slate-500">Metode bayar: QRIS / Cash (tunjukkan barcode ke kasir)</span>
+          </div>
+        </div>
+
+        <div id="menuGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Cart Modal -->
+  <div id="cartModal" class="fixed inset-0 bg-black/40 flex items-end md:items-center justify-center p-4 hidden">
+    <div class="bg-white w-full md:w-2/3 rounded-t-xl md:rounded-xl p-4 shadow-lg">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-lg font-bold">Keranjang</h3>
+        <button onclick="closeCart()" class="text-sm text-slate-500">Tutup</button>
+      </div>
+      <div id="cartItems" class="space-y-3 max-h-64 overflow-auto"></div>
+
+      <div class="mt-4 flex items-center justify-between">
+        <div><span class="font-semibold">Total:</span> Rp <span id="cartTotal">0</span></div>
+        <div class="flex gap-2">
+          <button class="px-4 py-2 bg-gray-200 rounded" onclick="clearCart()">Kosongkan</button>
+          <button class="px-4 py-2 bg-indigo-600 text-white rounded" onclick="openCheckout()">Checkout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth Modal -->
+  <div id="authModal" class="fixed inset-0 bg-black/40 flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-md rounded-xl p-6 shadow-lg">
+      <h3 class="text-xl font-bold mb-3">Login / Register</h3>
+      <form class="space-y-3" onsubmit="return false;">
+        <input id="authEmail" type="email" placeholder="Email" class="w-full p-2 border rounded" required />
+        <input id="authPassword" type="password" placeholder="Password" class="w-full p-2 border rounded" required />
+        <div class="flex gap-2">
+          <button type="button" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded" onclick="doLogin()">Login</button>
+          <button type="button" class="flex-1 px-4 py-2 bg-green-600 text-white rounded" onclick="doRegister()">Register</button>
+        </div>
+      </form>
+      <div class="mt-3 text-sm text-slate-500">Untuk admin gunakan admin-login.html</div>
+      <button class="mt-3 text-sm text-slate-500" onclick="closeAuth()">Tutup</button>
+    </div>
+  </div>
+
+  <!-- Checkout Modal -->
+  <div id="checkoutModal" class="fixed inset-0 bg-black/40 flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-2xl rounded-xl p-6 shadow-lg">
+      <h3 class="text-xl font-bold mb-3">Checkout</h3>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- QRIS Area -->
+        <div class="p-4 border rounded">
+          <h4 class="font-semibold">QRIS</h4>
+          <p class="text-sm text-slate-500 mb-3">Scan QRIS untuk membayar (contoh merchant QRIS)</p>
+          <img id="qrisImage" src="https://via.placeholder.com/320x180?text=QRIS+placeholder" class="w-full rounded" />
+          <div class="text-right mt-3">
+            <button class="px-4 py-2 bg-indigo-600 text-white rounded" onclick="confirmPayment('qris')">Saya Sudah Bayar</button>
+          </div>
+        </div>
+
+        <!-- Cash area -->
+        <div class="p-4 border rounded">
+          <h4 class="font-semibold">Cash</h4>
+          <p class="text-sm text-slate-500 mb-3">Pilih cash untuk dapatkan barcode antrian yang discan kasir.</p>
+          <div id="cashQRWrap" class="flex justify-center items-center">
+            <canvas id="cashQR"></canvas>
+          </div>
+          <div class="text-right mt-3">
+            <button class="px-4 py-2 bg-indigo-600 text-white rounded" onclick="confirmPayment('cash')">Bayar di Kasir (Dapat Barcode)</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 text-right">
+        <button class="px-4 py-2 bg-gray-200 rounded" onclick="closeCheckout()">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { listenMenu, placeOrder, listenOrders, login, registerUser, logout, stateChanged } from './js/firebase.js';
+
+    // state
+    let user = null;
+    let cart = [];
+
+    // DOM refs
+    const menuGrid = document.getElementById('menuGrid');
+    const sideMenu = document.getElementById('sideMenu');
+
+    // Listen menu from Firebase
+    listenMenu(renderMenu);
+
+    function renderMenu(data) {
+      // populate side
+      sideMenu.innerHTML = data.map(m => `<div class="flex justify-between"><div>${m.title}</div><div>Rp ${Number(m.price).toLocaleString()}</div></div>`).join('');
+      // populate grid
+      menuGrid.innerHTML = data.map(m => `
+        <div class="menu-card bg-white rounded-xl p-4 shadow">
+          <img src="${m.imageUrl || 'https://via.placeholder.com/420x240?text=No+Image'}" class="h-36 w-full object-cover rounded mb-3">
+          <h4 class="font-semibold">${m.title}</h4>
+          <p class="text-sm text-slate-500">${m.desc || ''}</p>
+          <div class="mt-3 flex items-center justify-between">
+            <div class="font-semibold">Rp ${Number(m.price).toLocaleString()}</div>
+            <button class="px-3 py-1 bg-indigo-600 text-white rounded" onclick="addToCart('${m.id}','${escapeHtml(m.title)}',${m.price}, '${m.imageUrl || ''}')">Tambah</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Helper to escape quotes in title
+    function escapeHtml(s){ return (s||'').replace(/'/g,"\\'").replace(/"/g,'\\"'); }
+
+    // CART functions
+    function addToCart(id, title, price, img){
+      const found = cart.find(x=>x.id===id);
+      if(found) found.qty++;
+      else cart.push({ id, title, price: Number(price), img, qty:1 });
+      renderCartCount();
+      Swal.fire({ icon:'success', title:'Ditambahkan', text: title, timer:800, showConfirmButton:false });
+    }
+    function renderCartCount(){ document.getElementById('cartCount').textContent = cart.reduce((s,i)=>s+i.qty,0); }
+
+    function openCart(){
+      document.getElementById('cartModal').classList.remove('hidden');
+      renderCartItems();
+    }
+    function closeCart(){ document.getElementById('cartModal').classList.add('hidden'); }
+    function clearCart(){ cart = []; renderCartCount(); renderCartItems(); }
+    function renderCartItems(){
+      const wrap = document.getElementById('cartItems');
+      if(cart.length===0) wrap.innerHTML = '<div class="text-slate-500">Keranjang kosong</div>';
+      else wrap.innerHTML = cart.map(i => `
+        <div class="flex items-center justify-between border-b pb-2">
+          <div>
+            <div class="font-semibold">${i.title}</div>
+            <div class="text-sm text-slate-500">Rp ${i.price.toLocaleString()} x ${i.qty}</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="px-2 py-1 bg-gray-200 rounded" onclick="dec('${i.id}')">-</button>
+            <div>${i.qty}</div>
+            <button class="px-2 py-1 bg-gray-200 rounded" onclick="inc('${i.id}')">+</button>
+          </div>
+        </div>
+      `).join('');
+      document.getElementById('cartTotal').textContent = cart.reduce((s,i)=>s + (i.price*i.qty),0).toLocaleString();
+    }
+    function inc(id){ const f=cart.find(c=>c.id===id); if(f){ f.qty++; renderCartItems(); renderCartCount(); } }
+    function dec(id){ const f=cart.find(c=>c.id===id); if(f){ f.qty = Math.max(0,f.qty-1); cart = cart.filter(i=>i.qty>0); renderCartItems(); renderCartCount(); } }
+
+    // AUTH UI
+    function openAuth(){ document.getElementById('authModal').classList.remove('hidden'); }
+    function closeAuth(){ document.getElementById('authModal').classList.add('hidden'); }
+
+    async function doRegister(){
+      const e = document.getElementById('authEmail').value;
+      const p = document.getElementById('authPassword').value;
+      if(!e||!p) return Swal.fire('Error','Isi email & password','error');
+      try{
+        await registerUser(e,p);
+        Swal.fire('Sukses','Akun terdaftar, silakan login','success');
+        closeAuth();
+      }catch(err){ Swal.fire('Gagal', err.message || 'Gagal register', 'error'); }
+    }
+
+    async function doLogin(){
+      const e = document.getElementById('authEmail').value;
+      const p = document.getElementById('authPassword').value;
+      if(!e||!p) return Swal.fire('Error','Isi email & password','error');
+      try{
+        await login(e,p);
+        Swal.fire('Sukses','Login berhasil','success');
+        closeAuth();
+      }catch(err){ Swal.fire('Gagal', err.message || 'Gagal login', 'error'); }
+    }
+
+    function closeCheckout(){ document.getElementById('checkoutModal').classList.add('hidden'); }
+
+    function openCheckout(){
+      if(!user) return Swal.fire('Login dulu','Silakan login untuk checkout','info').then(()=> openAuth());
+      if(cart.length===0) return Swal.fire('Kosong','Keranjang kosong','info');
+      document.getElementById('checkoutModal').classList.remove('hidden');
+      // generate cash QR placeholder content (we'll generate actual orderId on confirm)
+      QRCode.toCanvas(document.getElementById('cashQR'), 'ready-to-pay', { width:180 }).catch(console.error);
+    }
+
+    async function confirmPayment(method){
+      // create order in Firebase
+      if(!user) return Swal.fire('Login dulu','Login sebelum pesan','info').then(()=> openAuth());
+      const total = cart.reduce((s,i)=>s + i.price*i.qty,0);
+      const order = {
+        items: cart,
+        total,
+        payment: { method, status: method==='qris' ? 'waiting_verif' : 'waiting_scan' },
+        status: 'queued',
+        called: false,
+      };
+      try{
+        const id = await placeOrder(user.uid, order);
+        clearCart();
+        closeCheckout();
+        if(method === 'cash'){
+          // show generated barcode (we will use order id as payload)
+          Swal.fire({
+            title:'Tunjukkan barcode ini ke kasir',
+            html:`<div id="orderqr" class="flex justify-center"></div><p class="mt-3 text-sm text-slate-500">Order ID: ${id}</p>`,
+            didOpen: ()=>{
+              QRCode.toCanvas(document.getElementById('orderqr'), id, { width:240 });
+            }
+          });
+        } else {
+          Swal.fire('Pesanan Diterima', 'Silakan tunggu verifikasi pembayaran', 'success');
+        }
+      }catch(err){
+        console.error(err);
+        Swal.fire('Error','Gagal membuat pesanan','error');
+      }
+    }
+
+    // LISTEN orders to detect if user's order is called
+    stateChanged((u)=>{
+      user = u;
+      if(user){
+        document.getElementById('greeting').textContent = `${greetByTime()}, ${user.email.split('@')[0]}`;
+        document.getElementById('authBtn').textContent = 'Logout';
+        document.getElementById('authBtn').onclick = async ()=> { await logout(); location.reload(); };
+        document.getElementById('userNote').textContent = 'Anda akan diberi notifikasi saat pesanan dipanggil.';
+      } else {
+        document.getElementById('greeting').textContent = 'Selamat Datang!';
+        document.getElementById('authBtn').textContent = 'Login / Register';
+        document.getElementById('authBtn').onclick = openAuth;
+        document.getElementById('userNote').textContent = 'Login untuk memesan dan menerima notifikasi.';
+      }
+    });
+
+    // listen all orders and notify user if its order gets called
+    listenOrders((orders)=>{
+      orders.forEach(o=>{
+        if(!user) return;
+        if(o.userId === user.uid && o.called && !o._notified){
+          // local flag to avoid duplicate notify
+          o._notified = true;
+          const text = `Nomor antrian Anda: ${o.queue}. Silakan ambil pesanan.`;
+          Swal.fire('Dipanggil', text, 'info');
+          speakTTS(text);
+          // browser notification
+          if (Notification && Notification.permission === "granted") {
+            new Notification('Kantin: Pesanan Dipanggil', { body: text });
+          } else if (Notification && Notification.permission !== "denied") {
+            Notification.requestPermission().then(p => { if(p==='granted') new Notification('Kantin: Pesanan Dipanggil', { body: text }); });
+          }
+        }
+      });
+    });
+
+    // utility
+    function greetByTime(){
+      const hr = new Date().getHours();
+      if(hr < 11) return 'Selamat Pagi';
+      if(hr < 15) return 'Selamat Siang';
+      if(hr < 18) return 'Selamat Sore';
+      return 'Selamat Malam';
+    }
+
+    // TTS
+    function speakTTS(text){
+      try {
+        const ut = new SpeechSynthesisUtterance(text);
+        ut.lang = 'id-ID';
+        speechSynthesis.speak(ut);
+      } catch(e){ console.warn('TTS error', e); }
+    }
+
+    // expose some functions globally used in HTML (onclick)
+    window.addToCart = addToCart;
+    window.openCart = openCart;
+    window.closeCart = closeCart;
+    window.clearCart = clearCart;
+    window.inc = inc;
+    window.dec = dec;
+    window.openAuth = openAuth;
+    window.closeAuth = closeAuth;
+    window.doLogin = doLogin;
+    window.doRegister = doRegister;
+    window.openCheckout = openCheckout;
+    window.closeCheckout = closeCheckout;
+    window.confirmPayment = confirmPayment;
+  </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "js/*.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/js/(.*)", "dest": "/js/$1" },
+    { "src": "/(.*)", "dest": "/$1" },
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/login", "dest": "/login.html" },
+    { "src": "/register", "dest": "/register.html" },
+    { "src": "/dashboard", "dest": "/admin-dashboard.html" },
+    { "src": "/admin-login", "dest": "/admin-login.html" },
+    { "src": "/admin-reegister", "dest": "/admin-register.html" }
+  ]
+}

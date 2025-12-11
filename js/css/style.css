@@ -1,0 +1,16 @@
+/* css/style.css */
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+.card {
+  transition: 0.2s;
+}
+
+.card:hover {
+  transform: scale(1.02);
+}
+
+.menu-img {
+  border-radius: 12px;
+}
