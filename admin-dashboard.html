@@ -67,7 +67,7 @@
   </div>
 
 
-  <!-- ADD & EDIT MENU MODAL -->
+  <!-- MODAL MENU -->
   <div id="menuModal" class="fixed inset-0 hidden items-center justify-center p-4 z-50 bg-black/30">
     <div class="bg-white w-full max-w-xl rounded p-4 shadow">
       <h3 id="menuModalTitle" class="font-semibold mb-2">Tambah Menu</h3>
@@ -89,6 +89,10 @@
   <!-- SCRIPT -->
   <script type="module">
 
+    /* ======================
+       IMPORT FIREBASE
+    ====================== */
+
     import {
       authState, isAdmin, logout,
       listenMenu, addMenu, updateMenu, deleteMenu,
@@ -96,18 +100,29 @@
       listenOrders, callQueue, updateOrder
     } from "./js/firebase.js";
 
+
+    /* ======================
+       GLOBAL VAR
+    ====================== */
+
     let currentUser = null;
     let menus = [];
     let orders = [];
+    let editId = null;
+    let scanner = null;
 
-    /* ------------------------- AUTH PROTECT ------------------------- */
+
+    /* ======================
+       AUTH PROTECT
+    ====================== */
+
     authState(async user => {
       if (!user) return location.href = "/admin-login";
 
       const admin = await isAdmin(user.uid);
       if (!admin) {
-        Swal.fire("Akses ditolak", "Anda bukan admin", "error")
-          .then(() => location.href = "/admin-login");
+        Swal.fire("Akses Ditolak", "Anda bukan admin", "error")
+        .then(() => location.href = "/admin-login");
         return;
       }
 
@@ -119,7 +134,10 @@
     });
 
 
-    /* ------------------------- INIT LISTENERS ------------------------- */
+    /* ======================
+       INIT LISTENER
+    ====================== */
+
     function initListeners() {
       listenMenu(list => {
         menus = list;
@@ -127,62 +145,67 @@
       });
 
       listenOrders(list => {
-        orders = list.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        orders = list.sort((a,b)=> (a.createdAt||0)-(b.createdAt||0));
         renderOrders();
       });
     }
 
 
-    /* ------------------------- RENDER MENU ------------------------- */
+    /* ======================
+       RENDER MENU
+    ====================== */
+
     function renderMenus() {
       const wrap = document.getElementById("menuList");
 
-      if (menus.length === 0) {
-        wrap.innerHTML = `<div class="text-slate-500">Belum ada menu</div>`;
+      if (!menus.length) {
+        wrap.innerHTML = `<div class='text-slate-500'>Belum ada menu</div>`;
         return;
       }
 
-      wrap.innerHTML = menus
-        .map(m => `
-          <div class="p-3 border rounded flex gap-3">
+      wrap.innerHTML = menus.map(m => `
+        <div class="p-3 border rounded flex gap-3">
 
-            <img src="${m.imageUrl || 'https://via.placeholder.com/120x90'}"
-                 class="w-28 h-20 object-cover rounded">
+          <img src="${m.imageUrl || 'https://via.placeholder.com/120'}"
+               class="w-28 h-20 object-cover rounded">
 
-            <div class="flex-1">
-              <div class="font-semibold">${m.title}</div>
-              <div class="text-sm text-slate-500">Rp ${Number(m.price).toLocaleString()}</div>
-              <div class="text-sm text-slate-700 mt-1">${m.desc || ''}</div>
-            </div>
-
-            <div class="flex flex-col gap-2">
-              <button class="px-3 py-1 bg-yellow-400 rounded" onclick="editMenu('${m.id}')">Edit</button>
-              <button class="px-3 py-1 bg-red-500 text-white rounded" onclick="removeMenu('${m.id}')">Hapus</button>
-            </div>
-
+          <div class="flex-1">
+            <div class="font-semibold">${m.title}</div>
+            <div class="text-sm text-slate-500">Rp ${Number(m.price).toLocaleString()}</div>
+            <div class="text-sm text-slate-700 mt-1">${m.desc || ''}</div>
           </div>
-        `)
-        .join("");
+
+          <div class="flex flex-col gap-2">
+            <button class="px-3 py-1 bg-yellow-400 rounded"
+              onclick="editMenu('${m.id}')">Edit</button>
+
+            <button class="px-3 py-1 bg-red-500 text-white rounded"
+              onclick="removeMenu('${m.id}')">Hapus</button>
+          </div>
+
+        </div>
+      `).join("");
     }
 
 
-    /* ------------------------- MENU MODAL ------------------------- */
-
-    let editId = null;
+    /* ======================
+       MENU MODAL
+    ====================== */
 
     window.openAddMenu = () => {
       editId = null;
-      document.getElementById("menuModalTitle").textContent = "Tambah Menu";
-      document.getElementById("mTitle").value = "";
-      document.getElementById("mPrice").value = "";
-      document.getElementById("mDesc").value = "";
-      document.getElementById("mImage").value = "";
-      document.getElementById("menuModal").classList.remove("hidden");
+      menuModalTitle.textContent = "Tambah Menu";
+      mTitle.value = "";
+      mPrice.value = "";
+      mDesc.value = "";
+      mImage.value = "";
+      menuModal.classList.remove("hidden");
     };
 
     window.closeMenuModal = () => {
-      document.getElementById("menuModal").classList.add("hidden");
+      menuModal.classList.add("hidden");
     };
+
 
     window.saveMenu = async () => {
       const title = mTitle.value.trim();
@@ -193,30 +216,28 @@
       if (!title || !price)
         return Swal.fire("Error", "Nama & Harga wajib diisi", "error");
 
-      Swal.fire({ title: "Menyimpan...", didOpen: () => Swal.showLoading() });
+      Swal.fire({ title:"Menyimpan...", didOpen:()=>Swal.showLoading() });
 
       try {
         let img = "";
         if (file) img = await uploadImage(file, "menu");
 
-        const payload = {
-          title, price, desc, imageUrl: img, createdAt: Date.now()
-        };
+        const payload = { title, price, desc, imageUrl: img, createdAt: Date.now() };
 
         if (editId) await updateMenu(editId, payload);
         else await addMenu(payload);
 
         Swal.close();
         Swal.fire("Sukses", "Menu disimpan", "success");
-
         closeMenuModal();
+
       } catch (e) {
         Swal.fire("Error", "Gagal menyimpan menu", "error");
       }
     };
 
     window.editMenu = id => {
-      const m = menus.find(x => x.id === id);
+      const m = menus.find(x=>x.id===id);
       if (!m) return;
 
       editId = id;
@@ -232,11 +253,11 @@
 
     window.removeMenu = id => {
       Swal.fire({
-        title: "Hapus menu?",
-        icon: "warning",
-        showCancelButton: true
-      }).then(async res => {
-        if (res.isConfirmed) {
+        title:"Hapus menu?",
+        icon:"warning",
+        showCancelButton:true
+      }).then(async res=>{
+        if(res.isConfirmed){
           await deleteMenu(id);
           Swal.fire("Dihapus", "Menu berhasil dihapus", "success");
         }
@@ -244,105 +265,115 @@
     };
 
 
-    /* ------------------------- ORDER LIST ------------------------- */
+    /* ======================
+       RENDER ORDERS
+    ====================== */
+
     function renderOrders() {
       const wrap = document.getElementById("ordersList");
 
-      if (orders.length === 0) {
+      if (!orders.length) {
         wrap.innerHTML = `<div class="text-slate-500">Belum ada pesanan</div>`;
         return;
       }
 
-      wrap.innerHTML = orders
-        .map(o => `
-          <div class="p-2 border rounded">
+      wrap.innerHTML = orders.map(o => `
+        <div class="p-2 border rounded">
 
-            <div class="flex justify-between">
-              <div>
-                <div class="font-semibold">${o.userId || "User"}</div>
-                <div class="text-xs text-slate-500">${new Date(o.createdAt).toLocaleString()}</div>
-                <div class="text-xs">${(o.items||[])
-                  .map(it => `${it.title} x${it.qty}`).join(", ")}</div>
-                <div class="text-sm mt-1">Total: Rp ${Number(o.total || 0).toLocaleString()}</div>
-              </div>
+          <div class="flex justify-between">
+            <div>
+              <div class="font-semibold">${o.userId}</div>
+              <div class="text-xs text-slate-500">${new Date(o.createdAt).toLocaleString()}</div>
+              <div class="text-xs">${(o.items||[]).map(it=>`${it.title} x${it.qty}`).join(", ")}</div>
+              <div class="text-sm mt-1">Total: Rp ${Number(o.total||0).toLocaleString()}</div>
+            </div>
 
-              <div class="flex flex-col gap-2">
-                <button class="px-2 py-1 bg-indigo-600 text-white rounded text-xs"
-                        onclick="verifyOrderQR('${o.id}')">Verifikasi</button>
+            <div class="flex flex-col gap-2">
 
-                <button class="px-2 py-1 bg-green-600 text-white rounded text-xs"
-                        onclick="callOrder('${o.id}')">Panggil</button>
+              <button class="px-2 py-1 bg-indigo-600 text-white rounded text-xs"
+                onclick="verifyOrderQR('${o.id}')">Verifikasi</button>
 
-                <button class="px-2 py-1 bg-gray-300 rounded text-xs"
-                        onclick="finishOrder('${o.id}')">Selesai</button>
-              </div>
+              <button class="px-2 py-1 bg-green-600 text-white rounded text-xs"
+                onclick="callOrder('${o.id}')">Panggil</button>
+
+              <button class="px-2 py-1 bg-gray-300 rounded text-xs"
+                onclick="finishOrder('${o.id}')">Selesai</button>
 
             </div>
           </div>
-        `)
-        .join("");
+
+        </div>
+      `).join("");
     }
 
 
-    /* ------------------------- ORDER ACTIONS ------------------------- */
+    /* ======================
+       ORDER ACTION
+    ====================== */
 
     window.callOrder = async id => {
-      const q = Number(nextCall.value || "1");
+      const q = Number(nextCall.value||"1");
       await callQueue(id, q);
       nextCall.value = q + 1;
-
-      Swal.fire("Dipanggil", "Order dipanggil", "success");
+      Swal.fire("Dipanggil","Pesanan telah dipanggil","success");
     };
 
     window.finishOrder = async id => {
-      await updateOrder(id, { status: "done" });
-      Swal.fire("Selesai", "Order selesai", "success");
+      await updateOrder(id, { status:"done" });
+      Swal.fire("Selesai","Pesanan selesai","success");
     };
 
     window.verifyOrderQR = id => {
-      Swal.fire("Scan QR User", "Arahkan QR ke kamera", "info");
+      Swal.fire("Scan QR", "Arahkan QR ke kamera", "info");
     };
 
 
-    /* ------------------------- QR SCANNER ------------------------- */
-
-    let scanner = null;
+    /* ======================
+       QR SCANNER
+    ====================== */
 
     function startQRScanner() {
       scanner = new Html5Qrcode("reader");
 
       scanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: 240 },
+        { facingMode:"environment" },
+        { fps:10, qrbox:240 },
         text => {
           document.getElementById("qrResult").innerHTML =
-            "QR Terdeteksi: <b>" + text + "</b>";
+            "QR Terdeteksi: <b>"+text+"</b>";
 
           if (!text.startsWith("ORDER:")) return;
 
-          const orderId = text.replace("ORDER:", "");
-          location.href = "/admin-confirm?order=" + orderId;
+          const id = text.replace("ORDER:", "");
+          location.href = "/admin-confirm?order="+id;
 
           scanner.stop();
         }
-      );
+      )
+      .catch(()=> console.log("Scanner tidak bisa dimulai"));
     }
 
 
-    /* ------------------------- MANUAL REFRESH ------------------------- */
+    /* ======================
+       MANUAL REFRESH
+    ====================== */
+
     window.manualMenuRefresh = () => {
-      listenMenu(list => { menus = list; renderMenus(); });
+      listenMenu(list => { menus=list; renderMenus(); });
     };
 
     window.manualOrdersRefresh = () => {
       listenOrders(list => {
-        orders = list.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        orders=list.sort((a,b)=>a.createdAt-b.createdAt);
         renderOrders();
       });
     };
 
 
-    /* ------------------------- LOGOUT ------------------------- */
+    /* ======================
+       LOGOUT
+    ====================== */
+
     window.doLogout = async () => {
       await logout();
       location.href = "/admin-login";
