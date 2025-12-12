@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Konfirmasi Pembayaran - E-Kantin</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.lordicon.com/lordicon.js"></script>
+
+  <style>
+    body { animation: fadeIn 0.5s ease; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+
+<body class="bg-gradient-to-br from-purple-100 to-blue-100 min-h-screen p-5">
+
+<!-- NAV -->
+<div class="w-full bg-white/70 backdrop-blur-xl border border-white/40 shadow-xl p-4 rounded-2xl flex justify-between items-center">
+  <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+    <lord-icon
+        src="https://cdn.lordicon.com/surcxhka.json"
+        trigger="loop"
+        delay="200"
+        colors="primary:#121331,secondary:#6c16c7"
+        style="width:40px;height:40px">
+    </lord-icon>
+    Konfirmasi Pembayaran
+  </h1>
+
+  <button onclick="logoutAdmin()"
+    class="px-5 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition">
+    Logout
+  </button>
+</div>
+
+<!-- MAIN CARD -->
+<div class="max-w-2xl mx-auto mt-8 bg-white/60 backdrop-blur-xl border border-white/40 p-8 rounded-3xl shadow-2xl">
+
+  <div class="text-center mb-5">
+    <lord-icon
+        src="https://cdn.lordicon.com/lecprnjb.json"
+        trigger="loop"
+        delay="300"
+        state="hover-jump"
+        style="width:120px;height:120px">
+    </lord-icon>
+    <h2 class="text-xl font-semibold text-gray-800">Detail Order</h2>
+    <p class="text-gray-500 text-sm">Silakan cek dan konfirmasi pembayaran.</p>
+  </div>
+
+  <!-- ORDER BOX -->
+  <div id="orderBox"
+    class="p-5 bg-white border border-gray-200 rounded-2xl shadow text-gray-700">
+    <p class="text-center text-gray-500">Memuat data...</p>
+  </div>
+
+  <!-- CONFIRM BUTTON -->
+  <button id="confirmBtn" onclick="confirmPayment()"
+    class="hidden mt-6 w-full py-4 bg-green-600 text-white rounded-xl text-lg font-semibold hover:bg-green-700 transition-all shadow-lg hover:shadow-xl active:scale-95">
+    Konfirmasi Pembayaran
+  </button>
+
+</div>
+
+<script type="module">
+import { db, ref, onValue, update } from "./js/firebase.js";
+
+// ---------------- GET ORDER ID FROM URL ----------------
+
+const urlParams = new URLSearchParams(window.location.search);
+const orderId = urlParams.get("id");
+
+if (!orderId) {
+  document.getElementById("orderBox").innerHTML =
+    `<p class="text-red-500 text-center">Order ID tidak ditemukan.</p>`;
+} else {
+  loadOrder(orderId);
+}
+
+let currentOrder = null;
+
+// ---------------- LOAD ORDER ----------------
+function loadOrder(id) {
+  onValue(ref(db, "orders/" + id), snap => {
+    const data = snap.val();
+    currentOrder = data;
+
+    if (!data) {
+      document.getElementById("orderBox").innerHTML =
+        `<p class="text-red-500 text-center">Order tidak ditemukan.</p>`;
+      return;
+    }
+
+    document.getElementById("orderBox").innerHTML = `
+      <div class="space-y-2">
+        <p><b>Order ID:</b> ${id}</p>
+        <p><b>User ID:</b> ${data.userId}</p>
+        <p><b>Pesanan:</b> ${data.items?.length || 0} item</p>
+        <p><b>Total Bayar:</b> <span class="font-bold">Rp ${data.total}</span></p>
+        <p><b>Status Order:</b> ${data.status}</p>
+        <p><b>Metode Pembayaran:</b> ${data.payment?.method}</p>
+        <p><b>Status Pembayaran:</b> ${data.payment?.status}</p>
+      </div>
+    `;
+
+    document.getElementById("confirmBtn").classList.remove("hidden");
+  });
+}
+
+// ---------------- CONFIRM PAYMENT ----------------
+
+async function confirmPayment() {
+  if (!orderId) return;
+
+  await update(ref(db, "orders/" + orderId), {
+    payment: { method: "qris", status: "verified" },
+    status: "queued"
+  });
+
+  speak("Pembayaran berhasil diverifikasi.");
+
+  Swal.fire({
+    icon: "success",
+    title: "Berhasil!",
+    text: "Pembayaran telah diverifikasi.",
+    timer: 1500,
+    showConfirmButton: false
+  });
+
+  setTimeout(() => {
+    location.href = "/dashboard";
+  }, 1700);
+}
+
+// ---------------- VOICE TTS ----------------
+function speak(t) {
+  const u = new SpeechSynthesisUtterance(t);
+  u.lang = "id-ID";
+  speechSynthesis.speak(u);
+}
+
+// ---------------- LOGOUT ----------------
+function logoutAdmin() {
+  localStorage.removeItem("adminLogged");
+  location.href = "/admin-login";
+}
+</script>
+
+<!-- SWEETALERT -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+</body>
+</html>

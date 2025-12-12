@@ -1,270 +1,354 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Admin Kantin - Dashboard</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.lordicon.com/lusqsztk.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
-    body { background:#f0f4f8; font-family:Inter,sans-serif; }
-    .card { transition: transform .12s ease; }
-    .card:hover { transform: translateY(-6px); }
-    .status-badge { font-size: 0.75rem; padding:0.2rem 0.5rem; border-radius:6px; color:white; }
-    .status-pending { background:#f59e0b; }
-    .status-calling { background:#3b82f6; }
-    .status-done { background:#10b981; }
+    #menuList { max-height: 60vh; overflow:auto; }
+    #ordersList { max-height: 60vh; overflow:auto; }
   </style>
 </head>
-<body>
-<div class="max-w-7xl mx-auto p-6">
 
-  <!-- HEADER -->
-  <header class="flex items-center justify-between mb-6">
-    <h1 class="text-3xl font-bold">Admin Kantin</h1>
-    <div class="flex items-center gap-3">
-      <button id="logoutBtn" class="px-3 py-2 bg-red-500 text-white rounded" onclick="doLogout()">Logout</button>
-    </div>
-  </header>
+<body class="bg-slate-50 min-h-screen">
+  <div class="max-w-6xl mx-auto p-4">
 
-  <main class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-    <!-- Menu Management -->
-    <section class="md:col-span-2 bg-white p-5 rounded-2xl shadow">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="font-semibold text-xl">Kelola Menu</h2>
-        <div class="flex gap-2">
-          <button class="px-3 py-2 bg-green-600 text-white rounded" onclick="openAddMenu()">Tambah Menu</button>
-          <button class="px-3 py-2 bg-gray-200 rounded" onclick="refreshMenu()">Refresh</button>
-        </div>
+    <!-- HEADER -->
+    <header class="flex items-center justify-between mb-4">
+      <h1 class="text-2xl font-bold">Admin Kantin</h1>
+      <div class="flex items-center gap-3">
+        <div id="adminEmail" class="text-sm text-slate-600"></div>
+        <button class="px-3 py-2 bg-red-600 text-white rounded" onclick="doLogout()">Logout</button>
       </div>
+    </header>
 
-      <div id="menuList" class="space-y-3 max-h-[60vh] overflow-auto"></div>
-    </section>
+    <!-- MAIN -->
+    <main class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-    <!-- Orders & Controls -->
-    <aside class="bg-white p-5 rounded-2xl shadow">
-      <h2 class="font-semibold mb-3 text-lg">Daftar Pesanan</h2>
-
-      <div class="flex flex-col gap-3 mb-4">
-        <button class="w-full px-3 py-2 bg-indigo-600 text-white rounded" onclick="refreshOrders()">Refresh Orders</button>
-        <button class="w-full px-3 py-2 bg-blue-600 text-white rounded" onclick="openScanner()">Scan Cash QR</button>
-      </div>
-
-      <div class="mb-3">
-        <label class="text-sm">Nomor panggil berikutnya</label>
-        <input id="nextCall" type="number" value="1" class="w-full p-2 border rounded mt-1" />
-      </div>
-
-      <div class="max-h-[45vh] overflow-auto space-y-2" id="ordersWrap"></div>
-    </aside>
-
-  </main>
-</div>
-
-<!-- ADD/EDIT MENU MODAL -->
-<div id="menuModal" class="fixed inset-0 bg-black/40 flex items-center justify-center p-4 hidden">
-  <div class="bg-white w-full max-w-xl p-6 rounded-2xl shadow-xl">
-    <h3 id="menuModalTitle" class="text-lg font-bold mb-3">Tambah Menu</h3>
-    <input id="mTitle" class="w-full p-3 border rounded mb-2" placeholder="Nama menu" />
-    <input id="mPrice" class="w-full p-3 border rounded mb-2" placeholder="Harga" type="number" />
-    <textarea id="mDesc" class="w-full p-3 border rounded mb-2" placeholder="Deskripsi"></textarea>
-    <label class="block mb-1">Gambar (opsional)</label>
-    <input id="mImage" type="file" accept="image/*" class="mb-3" />
-    <div class="flex justify-end gap-2">
-      <button class="px-4 py-2 bg-gray-200 rounded" onclick="closeMenuModal()">Batal</button>
-      <button id="menuSaveBtn" class="px-4 py-2 bg-indigo-600 text-white rounded" onclick="saveMenu()">Simpan</button>
-    </div>
-  </div>
-</div>
-
-<!-- SCANNER MODAL -->
-<div id="scannerModal" class="fixed inset-0 bg-black/40 flex items-center justify-center p-4 hidden">
-  <div class="bg-white w-full max-w-3xl p-6 rounded-2xl shadow-xl">
-    <h3 class="text-lg font-semibold mb-3">Scanner QR (Cash)</h3>
-    <div id="reader" style="width:100%"></div>
-    <div class="mt-4 text-right">
-      <button class="px-3 py-2 bg-gray-200 rounded" onclick="closeScanner()">Tutup</button>
-    </div>
-  </div>
-</div>
-
-<script type="module">
-  import {
-    listenMenu, addMenu, updateMenu, deleteMenu, uploadImage,
-    listenOrders, callQueue, login, registerUser, logout, stateChanged
-  } from './js/firebase.js';
-
-  let adminUser = null;
-  stateChanged(u => {
-    adminUser = u;
-    if(!u || u.role!=='admin'){
-      location.href = '/admin-login';
-    }
-  });
-
-  let menus=[], orders=[];
-
-  listenMenu(data=>{
-    menus = data.sort((a,b)=> (a.createdAt||0) - (b.createdAt||0));
-    renderMenuList();
-  });
-
-  listenOrders(data=>{
-    orders = data.sort((a,b)=> (a.createdAt||0) - (b.createdAt||0));
-    renderOrders();
-  });
-
-  function renderMenuList(){
-    const wrap = document.getElementById('menuList');
-    if(menus.length===0) wrap.innerHTML='<div class="text-slate-500">Belum ada menu</div>';
-    else wrap.innerHTML = menus.map(m => `
-      <div class="p-3 border rounded-xl flex items-center gap-4 card">
-        <img src="${m.imageUrl || 'https://via.placeholder.com/120x90'}" class="w-28 h-20 object-cover rounded">
-        <div class="flex-1">
-          <div class="font-semibold">${m.title}</div>
-          <div class="text-sm text-slate-500">Rp ${Number(m.price).toLocaleString()}</div>
-          <div class="text-sm text-slate-700 mt-1">${m.desc || ''}</div>
-        </div>
-        <div class="flex flex-col gap-2">
-          <button class="px-3 py-1 bg-yellow-400 rounded" onclick="triggerEdit('${m.id}')">Edit</button>
-          <button class="px-3 py-1 bg-red-500 text-white rounded" onclick="triggerDelete('${m.id}')">Hapus</button>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  function renderOrders(){
-    const wrap = document.getElementById('ordersWrap');
-    if(orders.length===0) wrap.innerHTML='<div class="text-slate-500">Belum ada pesanan</div>';
-    else wrap.innerHTML = orders.map(o => {
-      const statusClass = o.status==='done'? 'status-done' : o.status==='calling'? 'status-calling':'status-pending';
-      return `
-        <div class="p-3 border rounded-xl card flex justify-between items-start">
-          <div>
-            <div class="font-semibold">${o.userId || 'anon'} <span class="text-xs text-slate-400">(${new Date(o.createdAt).toLocaleString()})</span></div>
-            <div class="text-xs text-slate-600">${o.items?.map(it=>`${it.title} x${it.qty}`).join(', ')}</div>
-            <div class="text-xs text-slate-700 mt-1">Total: Rp ${Number(o.total||0).toLocaleString()}</div>
-            <span class="status-badge ${statusClass} mt-1">${o.status || 'pending'} ${o.called ? `| antrian: ${o.queue}` : ''}</span>
-          </div>
-          <div class="flex flex-col gap-2">
-            <button class="px-2 py-1 bg-green-600 text-white rounded text-xs" onclick="doCall('${o.id}', ${o.queue||0})" ${o.called?'disabled':''}>Panggil</button>
-            <button class="px-2 py-1 bg-gray-200 rounded text-xs" onclick="markDone('${o.id}')">Selesai</button>
+      <!-- MENU -->
+      <section class="md:col-span-2 bg-white p-4 rounded shadow">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="font-semibold">Kelola Menu</h2>
+          <div class="flex gap-2">
+            <button class="px-3 py-2 bg-green-600 text-white rounded" onclick="openAddMenu()">Tambah Menu</button>
+            <button class="px-3 py-2 bg-gray-200 rounded" onclick="manualMenuRefresh()">Refresh</button>
           </div>
         </div>
-      `;
-    }).join('');
-  }
+        <div id="menuList" class="space-y-3"></div>
+      </section>
 
-  let editingId = null;
-  function openAddMenu(){
-    editingId = null;
-    document.getElementById('menuModalTitle').textContent='Tambah Menu';
-    document.getElementById('mTitle').value='';
-    document.getElementById('mPrice').value='';
-    document.getElementById('mDesc').value='';
-    document.getElementById('mImage').value='';
-    document.getElementById('menuModal').classList.remove('hidden');
-  }
+      <!-- ORDERS -->
+      <aside class="bg-white p-4 rounded shadow">
 
-  function closeMenuModal(){ document.getElementById('menuModal').classList.add('hidden'); }
+        <h2 class="font-semibold mb-3">Daftar Pesanan</h2>
 
-  async function saveMenu(){
-    const title = document.getElementById('mTitle').value.trim();
-    const price = Number(document.getElementById('mPrice').value);
-    const desc = document.getElementById('mDesc').value.trim();
-    const file = document.getElementById('mImage').files[0];
+        <div class="flex gap-2 mb-3">
+          <input id="nextCall" type="number" value="1" class="p-2 border rounded w-24" />
+          <button class="px-3 py-2 bg-indigo-600 text-white rounded" onclick="manualOrdersRefresh()">Refresh</button>
+        </div>
 
-    if(!title || !price) return Swal.fire('Error','Nama & harga harus diisi','error');
-    Swal.fire({ title:'Menyimpan...', didOpen(){ Swal.showLoading(); } });
+        <div id="ordersList" class="space-y-2"></div>
 
-    try {
-      let imageUrl='';
-      if(file) imageUrl = await uploadImage(file,'menu');
-      const payload = {title, price, desc, imageUrl, createdAt:Date.now()};
-      if(editingId){ await updateMenu(editingId, payload); Swal.fire('Sukses','Menu diupdate','success'); }
-      else{ await addMenu(payload); Swal.fire('Sukses','Menu ditambahkan','success'); }
-      closeMenuModal();
-    } catch(err){ Swal.fire('Error','Gagal menyimpan menu','error'); console.error(err); }
-  }
+        <hr class="my-4">
 
-  function triggerEdit(id){
-    const m = menus.find(x=>x.id===id);
-    if(!m) return;
-    editingId = id;
-    document.getElementById('menuModalTitle').textContent='Edit Menu';
-    document.getElementById('mTitle').value = m.title || '';
-    document.getElementById('mPrice').value = m.price || '';
-    document.getElementById('mDesc').value = m.desc || '';
-    document.getElementById('menuModal').classList.remove('hidden');
-  }
+        <!-- QR SCANNER -->
+        <h2 class="font-semibold mb-3">Scan QR Pembeli</h2>
+        <div id="reader" style="width: 300px;"></div>
+        <div id="qrResult" class="mt-2 text-green-700 text-sm"></div>
 
-  function triggerDelete(id){
-    Swal.fire({title:'Hapus menu?',icon:'warning',showCancelButton:true}).then(async r=>{
-      if(r.isConfirmed){ try{ await deleteMenu(id); Swal.fire('Dihapus','Menu dihapus','success'); } catch(e){ Swal.fire('Error','Gagal hapus','error'); } }
+      </aside>
+    </main>
+  </div>
+
+
+  <!-- ADD & EDIT MENU MODAL -->
+  <div id="menuModal" class="fixed inset-0 hidden items-center justify-center p-4 z-50 bg-black/30">
+    <div class="bg-white w-full max-w-xl rounded p-4 shadow">
+      <h3 id="menuModalTitle" class="font-semibold mb-2">Tambah Menu</h3>
+      <input id="mTitle" class="w-full p-2 border rounded mb-2" placeholder="Nama menu">
+      <input id="mPrice" class="w-full p-2 border rounded mb-2" placeholder="Harga" type="number">
+      <textarea id="mDesc" class="w-full p-2 border rounded mb-2" placeholder="Deskripsi"></textarea>
+
+      <label class="text-sm text-slate-700 mb-1 block">Gambar (Opsional):</label>
+      <input id="mImage" type="file" accept="image/*" class="mb-3" />
+
+      <div class="flex justify-end gap-2">
+        <button class="px-3 py-2 bg-gray-200 rounded" onclick="closeMenuModal()">Batal</button>
+        <button class="px-3 py-2 bg-indigo-600 text-white rounded" onclick="saveMenu()">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- SCRIPT -->
+  <script type="module">
+
+    import {
+      authState, isAdmin, logout,
+      listenMenu, addMenu, updateMenu, deleteMenu,
+      uploadImage,
+      listenOrders, callQueue, updateOrder
+    } from "./js/firebase.js";
+
+    let currentUser = null;
+    let menus = [];
+    let orders = [];
+
+    /* ------------------------- AUTH PROTECT ------------------------- */
+    authState(async user => {
+      if (!user) return location.href = "/admin-login";
+
+      const admin = await isAdmin(user.uid);
+      if (!admin) {
+        Swal.fire("Akses ditolak", "Anda bukan admin", "error")
+          .then(() => location.href = "/admin-login");
+        return;
+      }
+
+      currentUser = user;
+      document.getElementById("adminEmail").textContent = user.email;
+
+      initListeners();
+      startQRScanner();
     });
-  }
 
-  // CALL QUEUE
-  async function doCall(id, queueNumber){
-    const next = Number(document.getElementById('nextCall').value || '1');
-    try { await callQueue(id,next); } catch(e){ console.warn(e); }
 
-    const text = `Nomor antrian ${queueNumber || next}, pesanan siap.`;
-    try{ speechSynthesis.speak(new SpeechSynthesisUtterance(text)); } catch(e){}
+    /* ------------------------- INIT LISTENERS ------------------------- */
+    function initListeners() {
+      listenMenu(list => {
+        menus = list;
+        renderMenus();
+      });
 
-    Swal.fire('Dipanggil', `Order ${id} nomor ${queueNumber || next}`, 'success');
-    document.getElementById('nextCall').value = next + 1;
-    renderOrders(); // refresh
-  }
-
-  function markDone(id){ Swal.fire('Selesai','Tandai selesai di DB','info'); }
-
-  // QR SCANNER (Cash payment)
-  let scanner = null;
-  function openScanner(){
-    document.getElementById('scannerModal').classList.remove('hidden');
-    if(!scanner){
-      scanner = new Html5Qrcode("reader");
-      scanner.start(
-        { facingMode:"environment" },
-        { fps:10, qrbox:250 },
-        (decoded)=>{
-          const exists = orders.find(o=>o.id===decoded && o.called);
-          if(exists){ Swal.fire('Info','QR sudah pernah discan','info'); return; }
-          const q = Number(document.getElementById('nextCall').value || '1');
-          callQueue(decoded,q).then(()=>{
-            Swal.fire('Ter-scan','Order '+decoded+' diberi nomor '+q,'success');
-            document.getElementById('nextCall').value = q+1;
-            renderOrders();
-          }).catch(e=>{ Swal.fire('Error','Gagal update order','error'); console.warn(e); });
-        },
-        (err)=>{}
-      ).catch(console.error);
+      listenOrders(list => {
+        orders = list.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        renderOrders();
+      });
     }
-  }
-  function closeScanner(){
-    document.getElementById('scannerModal').classList.add('hidden');
-    if(scanner){ scanner.stop().then(()=>scanner.clear()).catch(console.warn); scanner=null; }
-  }
 
-  // HELPERS
-  window.openAddMenu=openAddMenu;
-  window.refreshMenu=()=> listenMenu(renderMenuList);
-  window.triggerEdit=triggerEdit;
-  window.triggerDelete=triggerDelete;
-  window.saveMenu=saveMenu;
-  window.closeMenuModal=closeMenuModal;
-  window.openScanner=openScanner;
-  window.closeScanner=closeScanner;
-  window.refreshOrders=()=> listenOrders(renderOrders);
 
-  async function doLogout(){ try{ await logout(); location.href='/admin-login'; } catch(e){ location.href='/admin-login'; } }
-  window.doLogout=doLogout;
+    /* ------------------------- RENDER MENU ------------------------- */
+    function renderMenus() {
+      const wrap = document.getElementById("menuList");
 
-</script>
+      if (menus.length === 0) {
+        wrap.innerHTML = `<div class="text-slate-500">Belum ada menu</div>`;
+        return;
+      }
+
+      wrap.innerHTML = menus
+        .map(m => `
+          <div class="p-3 border rounded flex gap-3">
+
+            <img src="${m.imageUrl || 'https://via.placeholder.com/120x90'}"
+                 class="w-28 h-20 object-cover rounded">
+
+            <div class="flex-1">
+              <div class="font-semibold">${m.title}</div>
+              <div class="text-sm text-slate-500">Rp ${Number(m.price).toLocaleString()}</div>
+              <div class="text-sm text-slate-700 mt-1">${m.desc || ''}</div>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <button class="px-3 py-1 bg-yellow-400 rounded" onclick="editMenu('${m.id}')">Edit</button>
+              <button class="px-3 py-1 bg-red-500 text-white rounded" onclick="removeMenu('${m.id}')">Hapus</button>
+            </div>
+
+          </div>
+        `)
+        .join("");
+    }
+
+
+    /* ------------------------- MENU MODAL ------------------------- */
+
+    let editId = null;
+
+    window.openAddMenu = () => {
+      editId = null;
+      document.getElementById("menuModalTitle").textContent = "Tambah Menu";
+      document.getElementById("mTitle").value = "";
+      document.getElementById("mPrice").value = "";
+      document.getElementById("mDesc").value = "";
+      document.getElementById("mImage").value = "";
+      document.getElementById("menuModal").classList.remove("hidden");
+    };
+
+    window.closeMenuModal = () => {
+      document.getElementById("menuModal").classList.add("hidden");
+    };
+
+    window.saveMenu = async () => {
+      const title = mTitle.value.trim();
+      const price = Number(mPrice.value);
+      const desc = mDesc.value.trim();
+      const file = mImage.files[0];
+
+      if (!title || !price)
+        return Swal.fire("Error", "Nama & Harga wajib diisi", "error");
+
+      Swal.fire({ title: "Menyimpan...", didOpen: () => Swal.showLoading() });
+
+      try {
+        let img = "";
+        if (file) img = await uploadImage(file, "menu");
+
+        const payload = {
+          title, price, desc, imageUrl: img, createdAt: Date.now()
+        };
+
+        if (editId) await updateMenu(editId, payload);
+        else await addMenu(payload);
+
+        Swal.close();
+        Swal.fire("Sukses", "Menu disimpan", "success");
+
+        closeMenuModal();
+      } catch (e) {
+        Swal.fire("Error", "Gagal menyimpan menu", "error");
+      }
+    };
+
+    window.editMenu = id => {
+      const m = menus.find(x => x.id === id);
+      if (!m) return;
+
+      editId = id;
+
+      menuModalTitle.textContent = "Edit Menu";
+      mTitle.value = m.title;
+      mPrice.value = m.price;
+      mDesc.value = m.desc || "";
+      mImage.value = "";
+
+      menuModal.classList.remove("hidden");
+    };
+
+    window.removeMenu = id => {
+      Swal.fire({
+        title: "Hapus menu?",
+        icon: "warning",
+        showCancelButton: true
+      }).then(async res => {
+        if (res.isConfirmed) {
+          await deleteMenu(id);
+          Swal.fire("Dihapus", "Menu berhasil dihapus", "success");
+        }
+      });
+    };
+
+
+    /* ------------------------- ORDER LIST ------------------------- */
+    function renderOrders() {
+      const wrap = document.getElementById("ordersList");
+
+      if (orders.length === 0) {
+        wrap.innerHTML = `<div class="text-slate-500">Belum ada pesanan</div>`;
+        return;
+      }
+
+      wrap.innerHTML = orders
+        .map(o => `
+          <div class="p-2 border rounded">
+
+            <div class="flex justify-between">
+              <div>
+                <div class="font-semibold">${o.userId || "User"}</div>
+                <div class="text-xs text-slate-500">${new Date(o.createdAt).toLocaleString()}</div>
+                <div class="text-xs">${(o.items||[])
+                  .map(it => `${it.title} x${it.qty}`).join(", ")}</div>
+                <div class="text-sm mt-1">Total: Rp ${Number(o.total || 0).toLocaleString()}</div>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <button class="px-2 py-1 bg-indigo-600 text-white rounded text-xs"
+                        onclick="verifyOrderQR('${o.id}')">Verifikasi</button>
+
+                <button class="px-2 py-1 bg-green-600 text-white rounded text-xs"
+                        onclick="callOrder('${o.id}')">Panggil</button>
+
+                <button class="px-2 py-1 bg-gray-300 rounded text-xs"
+                        onclick="finishOrder('${o.id}')">Selesai</button>
+              </div>
+
+            </div>
+          </div>
+        `)
+        .join("");
+    }
+
+
+    /* ------------------------- ORDER ACTIONS ------------------------- */
+
+    window.callOrder = async id => {
+      const q = Number(nextCall.value || "1");
+      await callQueue(id, q);
+      nextCall.value = q + 1;
+
+      Swal.fire("Dipanggil", "Order dipanggil", "success");
+    };
+
+    window.finishOrder = async id => {
+      await updateOrder(id, { status: "done" });
+      Swal.fire("Selesai", "Order selesai", "success");
+    };
+
+    window.verifyOrderQR = id => {
+      Swal.fire("Scan QR User", "Arahkan QR ke kamera", "info");
+    };
+
+
+    /* ------------------------- QR SCANNER ------------------------- */
+
+    let scanner = null;
+
+    function startQRScanner() {
+      scanner = new Html5Qrcode("reader");
+
+      scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 240 },
+        text => {
+          document.getElementById("qrResult").innerHTML =
+            "QR Terdeteksi: <b>" + text + "</b>";
+
+          if (!text.startsWith("ORDER:")) return;
+
+          const orderId = text.replace("ORDER:", "");
+          location.href = "/admin-confirm?order=" + orderId;
+
+          scanner.stop();
+        }
+      );
+    }
+
+
+    /* ------------------------- MANUAL REFRESH ------------------------- */
+    window.manualMenuRefresh = () => {
+      listenMenu(list => { menus = list; renderMenus(); });
+    };
+
+    window.manualOrdersRefresh = () => {
+      listenOrders(list => {
+        orders = list.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        renderOrders();
+      });
+    };
+
+
+    /* ------------------------- LOGOUT ------------------------- */
+    window.doLogout = async () => {
+      await logout();
+      location.href = "/admin-login";
+    };
+
+  </script>
+
 </body>
 </html>

@@ -1,43 +1,54 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login Admin</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdn.lordicon.com/lusqsztk.js"></script>
+  <title>Login Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.lordicon.com/lordicon.js"></script>
 </head>
-<body class="bg-gray-50 flex items-center justify-center min-h-screen">
-  <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
-    <h2 class="text-2xl font-bold mb-6 text-center">Login Admin</h2>
-    <form onsubmit="return false;" class="space-y-4">
-      <input id="authEmail" type="email" placeholder="Email Admin" class="w-full p-3 border rounded" required>
-      <input id="authPassword" type="password" placeholder="Password" class="w-full p-3 border rounded" required>
-      <button onclick="doLogin()" class="w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 btn-primary">
-        <lord-icon src="https://cdn.lordicon.com/lupuorrc.json" trigger="hover" colors="primary:#ffffff" style="width:24px;height:24px"></lord-icon>
-        Login
-      </button>
-    </form>
-    <p class="mt-4 text-sm text-gray-500 text-center">Belum punya akun admin? <a href="admin-register.html" class="text-red-600">Register</a></p>
+
+<body class="min-h-screen bg-gradient-to-br from-rose-600 to-red-500 flex items-center justify-center">
+
+  <div class="bg-white/20 backdrop-blur-xl p-8 rounded-2xl shadow-xl w-[360px] text-center">
+
+    <lord-icon src="https://cdn.lordicon.com/kthelypq.json"
+      trigger="loop" style="width:80px;height:80px"></lord-icon>
+
+    <h2 class="text-2xl text-white font-bold mb-6">Admin Login</h2>
+
+    <input id="email" class="w-full p-3 rounded-lg border mb-3" placeholder="Email">
+    <input id="pass" class="w-full p-3 rounded-lg border mb-5" type="password" placeholder="Password">
+
+    <button onclick="doLogin()" class="w-full bg-red-700 text-white p-3 rounded-lg">Login Admin</button>
+
+    <p class="text-white mt-4 text-sm">
+      Belum punya akun admin?
+      <a href="/admin-register" class="underline">Register Admin</a>
+    </p>
+
   </div>
 
   <script type="module">
-    import { login } from './js/firebase.js';
+    import { loginAdmin, isAdmin } from "./js/firebase.js";
 
     async function doLogin() {
-      const email = document.getElementById('authEmail').value;
-      const password = document.getElementById('authPassword').value;
-      if(!email || !password) return Swal.fire('Error','Isi email & password','error');
       try {
-        await login(email, password, true); // true = admin login
-        Swal.fire('Sukses','Login admin berhasil','success').then(()=>location.href='/dashboard');
-      } catch(e) {
-        Swal.fire('Error', e.message || 'Gagal login', 'error');
+        const cred = await loginAdmin(email.value, pass.value);
+        const ok = await isAdmin(cred.user.uid);
+
+        if (!ok) {
+          Swal.fire("Gagal", "Akun ini bukan admin!", "error");
+          return;
+        }
+
+        Swal.fire("Berhasil", "Login admin sukses", "success")
+          .then(() => location.href = "/dashboard");
+
+      } catch (e) {
+        Swal.fire("Error", "Login gagal", "error");
       }
     }
-
-    window.doLogin = doLogin;
   </script>
+
 </body>
 </html>
