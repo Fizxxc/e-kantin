@@ -241,3 +241,27 @@ export async function scanOrderQR(decoded) {
   }
   return null;
 }
+
+
+// ============================
+// CHECK ADMIN
+// ============================
+export async function isAdmin(uid) {
+  const snap = await get(ref(db, "admins/" + uid));
+  return snap.exists();
+}
+// ============================
+
+// ============================
+// MARK ORDER PAID
+// ============================
+export async function markOrderPaid(orderId) {
+  return await update(ref(db, "orders/" + orderId), {
+    payment: {
+      status: "paid",
+      method: "qris"
+    },
+    status: "paid",
+    paidAt: Date.now()
+  });
+}

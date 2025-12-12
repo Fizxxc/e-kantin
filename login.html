@@ -39,7 +39,7 @@
     </div>
 
     <div class="mt-5 text-center text-white/70 text-sm">
-      Belum punya akun? <a href="register.html" class="text-white underline">Daftar</a>
+      Belum punya akun? <a href="/register" class="text-white underline">Daftar</a>
     </div>
   </main>
 
@@ -60,7 +60,7 @@
       try {
         await loginUser(emailVal, passVal);
         Swal.fire({ icon: "success", title: "Login berhasil", timer: 900, showConfirmButton: false })
-          .then(()=> location.href = "index.html");
+          .then(()=> location.href = "/");
       } catch (err) {
         Swal.fire({ icon: "error", title: "Gagal login", text: err.message || "Periksa kredensial" });
       }

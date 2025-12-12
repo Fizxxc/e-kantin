@@ -37,7 +37,7 @@
     </div>
 
     <div class="mt-5 text-center text-white/70 text-sm">
-      Sudah punya akun? <a href="login.html" class="text-white underline">Login</a>
+      Sudah punya akun? <a href="/login" class="text-white underline">Login</a>
     </div>
   </main>
 
@@ -58,7 +58,7 @@
       try {
         await registerUser(emailVal, passVal);
         Swal.fire({ icon: "success", title: "Akun dibuat", text: "Silakan login", timer: 1200, showConfirmButton: false })
-          .then(()=> location.href = "login.html");
+          .then(()=> location.href = "/login");
       } catch (err) {
         Swal.fire({ icon: "error", title: "Gagal daftar", text: err.message || "Coba lagi" });
       }

@@ -1,68 +1,88 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Register Admin — E-Kantin</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Register</title>
 
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="https://cdn.lordicon.com/lusqsztk.js"></script>
+
+  <!-- LordIcon -->
+  <script src="https://cdn.lordicon.com/lordicon.js"></script>
 
   <style>
-    body { background: linear-gradient(135deg,#f6d365,#fda085); }
-    .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.08); }
+    body {
+      background: linear-gradient(135deg, #9333ea, #4f46e5);
+      animation: fadeIn 1s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-6">
 
-  <main class="w-full max-w-md glass rounded-3xl p-8 shadow-2xl text-white">
+<body class="min-h-screen flex items-center justify-center">
+
+  <div class="w-full max-w-md bg-white/20 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-white/30">
+
     <div class="flex justify-center mb-4">
-      <lord-icon src="https://cdn.lordicon.com/gqdnbnwt.json" trigger="loop" style="width:96px;height:96px"></lord-icon>
+      <lord-icon
+        src="https://cdn.lordicon.com/lecprnjb.json"
+        trigger="loop"
+        colors="primary:#ffffff,secondary:#ffffff"
+        style="width:120px;height:120px">
+      </lord-icon>
     </div>
 
-    <h1 class="text-2xl font-bold text-center mb-2">Register Admin</h1>
-    <p class="text-center text-white/70 mb-6">Buat akun admin (untuk testing — produksi: gunakan console/backend)</p>
+    <h2 class="text-center text-3xl font-bold text-white mb-2">Admin Register</h2>
+    <p class="text-center text-white/80 mb-6">Buat akun admin baru</p>
 
     <div class="space-y-4">
-      <input id="admRegEmail" type="email" placeholder="Email admin"
-        class="w-full p-3 rounded-xl bg-white/10 placeholder-white/60 outline-none border border-white/5" />
+      <input id="email" type="email" placeholder="Email admin"
+        class="w-full p-3 rounded-xl bg-white/30 text-white placeholder-white/60 outline-none">
 
-      <input id="admRegPassword" type="password" placeholder="Password"
-        class="w-full p-3 rounded-xl bg-white/10 placeholder-white/60 outline-none border border-white/5" />
+      <input id="password" type="password" placeholder="Password"
+        class="w-full p-3 rounded-xl bg-white/30 text-white placeholder-white/60 outline-none">
 
-      <button id="btnAdminRegister" class="w-full py-3 rounded-xl bg-black bg-opacity-80 hover:bg-opacity-90 transition font-semibold shadow">
-        Register Admin
+      <button id="registerBtn"
+        class="w-full p-3 rounded-xl bg-white text-purple-700 font-bold hover:bg-purple-200 active:scale-95 transition-all">
+        Daftar
       </button>
+
+      <p class="text-center text-white mt-3">
+        Sudah punya akun?  
+        <a href="/admin-login" class="underline font-bold">Login</a>
+      </p>
     </div>
 
-    <div class="mt-5 text-center text-white/70 text-sm">
-      Sudah punya akun? <a href="admin-login.html" class="text-white underline">Login Admin</a>
-    </div>
-  </main>
+  </div>
 
+  <!-- FIREBASE.JS -->
   <script type="module">
-    import { registerAdmin } from "./js/firebase.js";
+    import { adminRegister } from "./js/firebase.js";
 
-    const btn = document.getElementById("btnAdminRegister");
+    document.getElementById("registerBtn").addEventListener("click", async () => {
 
-    btn.addEventListener("click", async () => {
-      const emailVal = document.getElementById("admRegEmail").value.trim();
-      const passVal  = document.getElementById("admRegPassword").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const pass  = document.getElementById("password").value.trim();
 
-      if(!emailVal || !passVal){
-        Swal.fire({ icon: "warning", title: "Isi email & password" });
+      if (!email || !pass) {
+        alert("Email dan password wajib diisi!");
         return;
       }
 
       try {
-        await registerAdmin(emailVal, passVal);
-        Swal.fire({ icon: "success", title: "Admin dibuat", timer: 1000, showConfirmButton: false })
-          .then(()=> location.href = "admin-login.html");
-      } catch (err) {
-        Swal.fire({ icon: "error", title: "Gagal daftar admin", text: err.message || "Coba lagi" });
+        await adminRegister(email, pass);
+        alert("Berhasil daftar admin!");
+        window.location.href = "/admin-login";
+      } catch (e) {
+        console.error(e);
+        alert("Gagal register admin!");
       }
     });
   </script>
+
 </body>
 </html>
