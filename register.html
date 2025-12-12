@@ -1,68 +1,68 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Register User - E-Kantin</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Daftar User — E-Kantin</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.lordicon.com/lordicon.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.lordicon.com/lusqsztk.js"></script>
+
+  <style>
+    body { background: linear-gradient(135deg,#00b09b,#96c93d); }
+    .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.08); }
+  </style>
 </head>
+<body class="min-h-screen flex items-center justify-center p-6">
 
-<body class="bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center min-h-screen">
+  <main class="w-full max-w-md glass rounded-3xl p-8 shadow-2xl text-white">
+    <div class="flex justify-center mb-4">
+      <lord-icon src="https://cdn.lordicon.com/ajkxzzfb.json" trigger="loop" style="width:96px;height:96px"></lord-icon>
+    </div>
 
-<div class="bg-white w-[90%] max-w-md p-8 rounded-2xl shadow-xl text-center animate-fadeIn">
+    <h1 class="text-2xl font-bold text-center mb-2">Daftar User</h1>
+    <p class="text-center text-white/70 mb-6">Buat akun untuk memesan lebih cepat</p>
 
-  <lord-icon src="https://cdn.lordicon.com/ajkxzzfb.json"
-    trigger="loop"
-    style="width:110px;height:110px;">
-  </lord-icon>
+    <div class="space-y-4">
+      <input id="regEmail" type="email" placeholder="Email"
+        class="w-full p-3 rounded-xl bg-white/10 placeholder-white/60 outline-none border border-white/5" />
 
-  <h1 class="text-2xl font-bold mt-4">Register User</h1>
-  <p class="text-gray-500 mb-6">Buat akun Anda sekarang</p>
+      <input id="regPassword" type="password" placeholder="Password"
+        class="w-full p-3 rounded-xl bg-white/10 placeholder-white/60 outline-none border border-white/5" />
 
-  <input id="email" type="email"
-    class="w-full border rounded-lg px-4 py-3 mb-3"
-    placeholder="Email">
+      <button id="btnRegister" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 transition font-semibold shadow">
+        Daftar
+      </button>
+    </div>
 
-  <input id="password" type="password"
-    class="w-full border rounded-lg px-4 py-3 mb-5"
-    placeholder="Password">
+    <div class="mt-5 text-center text-white/70 text-sm">
+      Sudah punya akun? <a href="login.html" class="text-white underline">Login</a>
+    </div>
+  </main>
 
-  <button id="btnRegister"
-    class="w-full py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition">
-    Register
-  </button>
+  <script type="module">
+    import { registerUser } from "./js/firebase.js";
 
-  <p class="mt-4 text-sm">
-    Sudah punya akun?
-    <a href="/login" class="text-purple-600 font-bold">Login</a>
-  </p>
-</div>
+    const btnRegister = document.getElementById("btnRegister");
 
-<script type="module">
-import { auth, registerUser } from "./js/firebase.js";
+    btnRegister.addEventListener("click", async () => {
+      const emailVal = document.getElementById("regEmail").value.trim();
+      const passVal  = document.getElementById("regPassword").value.trim();
 
-document.getElementById("btnRegister").addEventListener("click", doRegister);
+      if(!emailVal || !passVal){
+        Swal.fire({ icon: "warning", title: "Isi semua data" });
+        return;
+      }
 
-async function doRegister() {
-  const email = email.value.trim();
-  const pass = password.value.trim();
-
-  if (!email || !pass) {
-    alert("Semua data wajib diisi!");
-    return;
-  }
-
-  try {
-    await registerUser(email, pass);
-    alert("Register berhasil!");
-    location.href = "/login";
-  } catch (err) {
-    alert("Gagal daftar: " + err.message);
-  }
-}
-</script>
-
+      try {
+        await registerUser(emailVal, passVal);
+        Swal.fire({ icon: "success", title: "Akun dibuat", text: "Silakan login", timer: 1200, showConfirmButton: false })
+          .then(()=> location.href = "login.html");
+      } catch (err) {
+        Swal.fire({ icon: "error", title: "Gagal daftar", text: err.message || "Coba lagi" });
+      }
+    });
+  </script>
 </body>
 </html>

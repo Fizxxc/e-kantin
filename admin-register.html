@@ -1,69 +1,68 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Register Admin</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Register Admin — E-Kantin</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.lordicon.com/lordicon.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.lordicon.com/lusqsztk.js"></script>
+
+  <style>
+    body { background: linear-gradient(135deg,#f6d365,#fda085); }
+    .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.08); }
+  </style>
 </head>
+<body class="min-h-screen flex items-center justify-center p-6">
 
-<body class="bg-slate-900 flex items-center justify-center min-h-screen">
+  <main class="w-full max-w-md glass rounded-3xl p-8 shadow-2xl text-white">
+    <div class="flex justify-center mb-4">
+      <lord-icon src="https://cdn.lordicon.com/gqdnbnwt.json" trigger="loop" style="width:96px;height:96px"></lord-icon>
+    </div>
 
-<div class="bg-white w-[90%] max-w-md p-8 rounded-xl shadow-xl text-center">
+    <h1 class="text-2xl font-bold text-center mb-2">Register Admin</h1>
+    <p class="text-center text-white/70 mb-6">Buat akun admin (untuk testing — produksi: gunakan console/backend)</p>
 
-  <lord-icon src="https://cdn.lordicon.com/ajkxzzfb.json"
-    trigger="loop"
-    style="width:120px;height:120px;">
-  </lord-icon>
+    <div class="space-y-4">
+      <input id="admRegEmail" type="email" placeholder="Email admin"
+        class="w-full p-3 rounded-xl bg-white/10 placeholder-white/60 outline-none border border-white/5" />
 
-  <h1 class="text-2xl font-bold mt-4">Admin Register</h1>
+      <input id="admRegPassword" type="password" placeholder="Password"
+        class="w-full p-3 rounded-xl bg-white/10 placeholder-white/60 outline-none border border-white/5" />
 
-  <input id="email" type="email"
-    class="w-full border rounded-lg px-4 py-3 mb-3"
-    placeholder="Email Admin">
+      <button id="btnAdminRegister" class="w-full py-3 rounded-xl bg-black bg-opacity-80 hover:bg-opacity-90 transition font-semibold shadow">
+        Register Admin
+      </button>
+    </div>
 
-  <input id="password" type="password"
-    class="w-full border rounded-lg px-4 py-3 mb-5"
-    placeholder="Password">
+    <div class="mt-5 text-center text-white/70 text-sm">
+      Sudah punya akun? <a href="admin-login.html" class="text-white underline">Login Admin</a>
+    </div>
+  </main>
 
-  <button id="btnRegister"
-    class="w-full py-3 bg-black text-white rounded-xl hover:bg-gray-800">
-    Register Admin
-  </button>
+  <script type="module">
+    import { registerAdmin } from "./js/firebase.js";
 
-  <p class="mt-4 text-sm">
-    Sudah punya akun?
-    <a href="/admin-login" class="text-black font-bold">Login</a>
-  </p>
-</div>
+    const btn = document.getElementById("btnAdminRegister");
 
-<script type="module">
-import { registerUser, db } from "./js/firebase.js";
-import { ref, set } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+    btn.addEventListener("click", async () => {
+      const emailVal = document.getElementById("admRegEmail").value.trim();
+      const passVal  = document.getElementById("admRegPassword").value.trim();
 
-document.getElementById("btnRegister").addEventListener("click", doRegister);
+      if(!emailVal || !passVal){
+        Swal.fire({ icon: "warning", title: "Isi email & password" });
+        return;
+      }
 
-async function doRegister() {
-  const email = email.value;
-  const pass = password.value;
-
-  try {
-    const res = await registerUser(email, pass);
-
-    await set(ref(db, "admins/" + res.user.uid), {
-      email,
-      createdAt: Date.now()
+      try {
+        await registerAdmin(emailVal, passVal);
+        Swal.fire({ icon: "success", title: "Admin dibuat", timer: 1000, showConfirmButton: false })
+          .then(()=> location.href = "admin-login.html");
+      } catch (err) {
+        Swal.fire({ icon: "error", title: "Gagal daftar admin", text: err.message || "Coba lagi" });
+      }
     });
-
-    alert("Admin berhasil dibuat!");
-    location.href = "/admin-login";
-  } catch (err) {
-    alert("Gagal daftar admin: " + err.message);
-  }
-}
-</script>
-
+  </script>
 </body>
 </html>

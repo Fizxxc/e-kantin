@@ -1,68 +1,70 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login User - E-Kantin</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login User — E-Kantin</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.lordicon.com/lordicon.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.lordicon.com/lusqsztk.js"></script>
+
+  <style>
+    body { background: linear-gradient(135deg,#667eea,#764ba2); }
+    .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.08); }
+    @keyframes float { 0% { transform: translateY(0); } 50% { transform: translateY(-6px);} 100% { transform: translateY(0);} }
+    .float { animation: float 3s ease-in-out infinite; }
+  </style>
 </head>
+<body class="min-h-screen flex items-center justify-center p-6">
 
-<body class="bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center min-h-screen">
+  <main class="w-full max-w-md glass rounded-3xl p-8 shadow-2xl text-white">
+    <div class="flex justify-center mb-4">
+      <lord-icon src="https://cdn.lordicon.com/hrqwmuhr.json" trigger="loop" style="width:96px;height:96px"></lord-icon>
+    </div>
 
-<div class="bg-white w-[90%] max-w-md p-8 rounded-2xl shadow-xl text-center animate-fadeIn">
-  
-  <lord-icon src="https://cdn.lordicon.com/hrqwmuhr.json"
-    trigger="loop"
-    style="width:110px;height:110px;">
-  </lord-icon>
+    <h1 class="text-2xl font-bold text-center mb-2">Login User</h1>
+    <p class="text-center text-white/70 mb-6">Masuk untuk pesan & dapatkan notifikasi antrian</p>
 
-  <h1 class="text-2xl font-bold mt-4">Login User</h1>
-  <p class="text-gray-500 mb-6">Masuk untuk memesan makanan</p>
+    <div class="space-y-4">
+      <input id="inpEmail" type="email" placeholder="Email"
+        class="w-full p-3 rounded-xl bg-white/10 placeholder-white/60 outline-none border border-white/5" />
 
-  <input id="email" type="email"
-    class="w-full border rounded-lg px-4 py-3 mb-3"
-    placeholder="Email">
+      <input id="inpPassword" type="password" placeholder="Password"
+        class="w-full p-3 rounded-xl bg-white/10 placeholder-white/60 outline-none border border-white/5" />
 
-  <input id="password" type="password"
-    class="w-full border rounded-lg px-4 py-3 mb-5"
-    placeholder="Password">
+      <button id="btnLogin" class="w-full py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 transition font-semibold shadow float">
+        Login
+      </button>
+    </div>
 
-  <button id="btnLogin"
-    class="w-full py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition">
-    Login
-  </button>
+    <div class="mt-5 text-center text-white/70 text-sm">
+      Belum punya akun? <a href="register.html" class="text-white underline">Daftar</a>
+    </div>
+  </main>
 
-  <p class="mt-4 text-sm">
-    Belum punya akun?
-    <a href="/register" class="text-purple-600 font-bold">Daftar</a>
-  </p>
-</div>
+  <script type="module">
+    import { loginUser } from "./js/firebase.js";
 
-<script type="module">
-import { auth, login, stateChanged } from "./js/firebase.js";
+    const btnLogin = document.getElementById("btnLogin");
 
-document.getElementById("btnLogin").addEventListener("click", doLogin);
+    btnLogin.addEventListener("click", async () => {
+      const emailVal = document.getElementById("inpEmail").value.trim();
+      const passVal  = document.getElementById("inpPassword").value.trim();
 
-async function doLogin() {
-  const email = email.value.trim();
-  const pass = password.value.trim();
+      if(!emailVal || !passVal){
+        Swal.fire({ icon: "warning", title: "Lengkapi data", text: "Isi email dan password"}) ;
+        return;
+      }
 
-  if (!email || !pass) {
-    alert("Isi semua data!");
-    return;
-  }
-
-  try {
-    await login(email, pass);
-    localStorage.setItem("userLogged", "yes");
-    location.href = "/";
-  } catch (err) {
-    alert("Login gagal: " + err.message);
-  }
-}
-</script>
-
+      try {
+        await loginUser(emailVal, passVal);
+        Swal.fire({ icon: "success", title: "Login berhasil", timer: 900, showConfirmButton: false })
+          .then(()=> location.href = "index.html");
+      } catch (err) {
+        Swal.fire({ icon: "error", title: "Gagal login", text: err.message || "Periksa kredensial" });
+      }
+    });
+  </script>
 </body>
 </html>
