@@ -1,45 +1,69 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Register Admin</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.lordicon.com/lordicon.js"></script>
 </head>
 
-<body class="min-h-screen bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center">
+<body class="bg-slate-900 flex items-center justify-center min-h-screen">
 
-  <div class="bg-white/20 backdrop-blur-xl p-8 rounded-2xl shadow-xl w-[360px] text-center">
+<div class="bg-white w-[90%] max-w-md p-8 rounded-xl shadow-xl text-center">
 
-    <lord-icon src="https://cdn.lordicon.com/gqdnbnwt.json"
-      trigger="loop" style="width:80px;height:80px"></lord-icon>
+  <lord-icon src="https://cdn.lordicon.com/ajkxzzfb.json"
+    trigger="loop"
+    style="width:120px;height:120px;">
+  </lord-icon>
 
-    <h2 class="text-2xl text-white font-bold mb-6">Daftar Admin</h2>
+  <h1 class="text-2xl font-bold mt-4">Admin Register</h1>
 
-    <input id="email" class="w-full p-3 rounded-lg border mb-3" placeholder="Email">
-    <input id="pass" class="w-full p-3 rounded-lg border mb-5" type="password" placeholder="Password">
+  <input id="email" type="email"
+    class="w-full border rounded-lg px-4 py-3 mb-3"
+    placeholder="Email Admin">
 
-    <button onclick="doRegister()" class="w-full bg-yellow-700 text-white p-3 rounded-lg">Register Admin</button>
+  <input id="password" type="password"
+    class="w-full border rounded-lg px-4 py-3 mb-5"
+    placeholder="Password">
 
-    <p class="text-white mt-4 text-sm">
-      Sudah punya akun? <a href="/admin-login" class="underline">Login Admin</a>
-    </p>
+  <button id="btnRegister"
+    class="w-full py-3 bg-black text-white rounded-xl hover:bg-gray-800">
+    Register Admin
+  </button>
 
-  </div>
+  <p class="mt-4 text-sm">
+    Sudah punya akun?
+    <a href="/admin-login" class="text-black font-bold">Login</a>
+  </p>
+</div>
 
-  <script type="module">
-    import { registerAdmin } from "./js/firebase.js";
+<script type="module">
+import { registerUser, db } from "./js/firebase.js";
+import { ref, set } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
-    async function doRegister() {
-      try {
-        await registerAdmin(email.value, pass.value);
-        Swal.fire("Sukses", "Admin berhasil dibuat", "success")
-          .then(() => location.href = "/admin-login");
-      } catch (err) {
-        Swal.fire("Gagal", "Email sudah dipakai atau error", "error");
-      }
-    }
-  </script>
+document.getElementById("btnRegister").addEventListener("click", doRegister);
+
+async function doRegister() {
+  const email = email.value;
+  const pass = password.value;
+
+  try {
+    const res = await registerUser(email, pass);
+
+    await set(ref(db, "admins/" + res.user.uid), {
+      email,
+      createdAt: Date.now()
+    });
+
+    alert("Admin berhasil dibuat!");
+    location.href = "/admin-login";
+  } catch (err) {
+    alert("Gagal daftar admin: " + err.message);
+  }
+}
+</script>
 
 </body>
 </html>

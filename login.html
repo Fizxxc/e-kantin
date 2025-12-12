@@ -1,52 +1,68 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <title>Login User</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login User - E-Kantin</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.lordicon.com/lordicon.js"></script>
 </head>
 
-<body class="min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+<body class="bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center min-h-screen">
 
-  <div class="bg-white/20 backdrop-blur-xl p-8 rounded-2xl shadow-xl w-[360px] text-center">
-    
-    <lord-icon src="https://cdn.lordicon.com/egmlnyku.json"
-      trigger="loop" style="width:80px;height:80px">
-    </lord-icon>
+<div class="bg-white w-[90%] max-w-md p-8 rounded-2xl shadow-xl text-center animate-fadeIn">
+  
+  <lord-icon src="https://cdn.lordicon.com/hrqwmuhr.json"
+    trigger="loop"
+    style="width:110px;height:110px;">
+  </lord-icon>
 
-    <h2 class="text-2xl font-bold text-white mt-4 mb-6">Login User</h2>
+  <h1 class="text-2xl font-bold mt-4">Login User</h1>
+  <p class="text-gray-500 mb-6">Masuk untuk memesan makanan</p>
 
-    <input id="email" class="w-full p-3 rounded-lg border mb-3" placeholder="Email">
-    <input id="pass" class="w-full p-3 rounded-lg border mb-5" type="password" placeholder="Password">
+  <input id="email" type="email"
+    class="w-full border rounded-lg px-4 py-3 mb-3"
+    placeholder="Email">
 
-    <button onclick="doLogin()" class="w-full bg-indigo-700 text-white p-3 rounded-lg shadow-md">
-      Login
-    </button>
+  <input id="password" type="password"
+    class="w-full border rounded-lg px-4 py-3 mb-5"
+    placeholder="Password">
 
-    <p class="text-white mt-4 text-sm">
-      Belum punya akun?
-      <a href="register.html" class="underline">Register</a>
-    </p>
+  <button id="btnLogin"
+    class="w-full py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition">
+    Login
+  </button>
 
-  </div>
+  <p class="mt-4 text-sm">
+    Belum punya akun?
+    <a href="/register" class="text-purple-600 font-bold">Daftar</a>
+  </p>
+</div>
 
-  <script type="module">
-    import { loginUser } from "./js/firebase.js";
+<script type="module">
+import { auth, login, stateChanged } from "./js/firebase.js";
 
-    async function doLogin() {
-      const email = document.getElementById("email").value;
-      const pass  = document.getElementById("pass").value;
+document.getElementById("btnLogin").addEventListener("click", doLogin);
 
-      try {
-        await loginUser(email, pass);
-        Swal.fire("Berhasil", "Login user sukses", "success")
-          .then(() => location.href = "index.html");
-      } catch (e) {
-        Swal.fire("Gagal", "Email atau password salah", "error");
-      }
-    }
-  </script>
+async function doLogin() {
+  const email = email.value.trim();
+  const pass = password.value.trim();
+
+  if (!email || !pass) {
+    alert("Isi semua data!");
+    return;
+  }
+
+  try {
+    await login(email, pass);
+    localStorage.setItem("userLogged", "yes");
+    location.href = "/";
+  } catch (err) {
+    alert("Login gagal: " + err.message);
+  }
+}
+</script>
 
 </body>
 </html>
