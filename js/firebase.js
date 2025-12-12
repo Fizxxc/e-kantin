@@ -28,6 +28,7 @@ import {
   getDownloadURL
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
 
+
 // ==== CONFIG ====
 const firebaseConfig = {
   apiKey: "AIzaSyAKF1eXOowCS35ylhonxvdy9QBiLYLmvzY",
@@ -44,10 +45,11 @@ const auth = getAuth(app);
 const db = getDatabase(app);
 const storage = getStorage(app);
 
-// ============================
-// EXPORT UTAMA
-// ============================
 
+
+// ============================
+// AUTH STATE
+// ============================
 export function authState(cb) {
   return onAuthStateChanged(auth, cb);
 }
@@ -56,22 +58,16 @@ export function logout() {
   return signOut(auth);
 }
 
-// ============================
-// ADMIN CHECK
-// ============================
-export async function isAdmin(uid) {
-  const snap = await get(ref(db, "admins/" + uid));
-  return snap.exists();
-}
+
 
 // ============================
-// USER LOGIN
+// USER LOGIN (FIX EXPORT NAME)
 // ============================
-export async function userLogin(email, pass) {
+export async function loginUser(email, pass) {
   return await signInWithEmailAndPassword(auth, email, pass);
 }
 
-export async function userRegister(email, pass) {
+export async function registerUser(email, pass) {
   const res = await createUserWithEmailAndPassword(auth, email, pass);
   await set(ref(db, "users/" + res.user.uid), {
     email,
@@ -79,6 +75,8 @@ export async function userRegister(email, pass) {
   });
   return res;
 }
+
+
 
 // ============================
 // ADMIN LOGIN
@@ -96,10 +94,11 @@ export async function adminLogin(email, pass) {
   return await signInWithEmailAndPassword(auth, email, pass);
 }
 
+
+
 // ============================
 // MENU SYSTEM
 // ============================
-
 export function listenMenu(cb) {
   onValue(ref(db, "menu"), snap => {
     const val = snap.val() || {};
@@ -126,6 +125,8 @@ export async function deleteMenu(id) {
   return await remove(ref(db, "menu/" + id));
 }
 
+
+
 // ============================
 // IMAGE UPLOAD
 // ============================
@@ -136,10 +137,11 @@ export async function uploadImage(file, folder) {
   return await getDownloadURL(storageRef);
 }
 
+
+
 // ============================
 // ORDER SYSTEM
 // ============================
-
 export function listenOrders(cb) {
   onValue(ref(db, "orders"), snap => {
     const val = snap.val() || {};
@@ -152,8 +154,44 @@ export async function updateOrder(id, data) {
   return await update(ref(db, "orders/" + id), data);
 }
 
+export async function deleteOrder(orderId) {
+  return await remove(ref(db, "orders/" + orderId));
+}
+
+
+
 // ============================
-// CALL QUEUE (Fix error)
+// TEMPAT ORDER USER (FINAL FIX)
+// ============================
+export async function placeOrder(userId, order) {
+  const id = push(ref(db, "orders")).key;
+
+  const data = {
+    id,
+    userId,
+    items: order.items,
+    total: order.total,
+    createdAt: Date.now(),
+    status: "pending",
+
+    // FIX agar sesuai user.html
+    payment: {
+      method: order.payment.method,
+      status: order.payment.status
+    },
+
+    queue: Math.floor(1000 + Math.random() * 9000),
+    called: false
+  };
+
+  await set(ref(db, "orders/" + id), data);
+  return id;
+}
+
+
+
+// ============================
+// QUEUE CALL SYSTEM
 // ============================
 export async function callQueue(orderId, queueNumber) {
   await update(ref(db, "orders/" + orderId), {
@@ -161,4 +199,45 @@ export async function callQueue(orderId, queueNumber) {
     calledAt: Date.now(),
     status: "called"
   });
+}
+
+
+
+// ============================
+// GET ORDER BY ID
+// ============================
+export async function getOrderById(orderId) {
+  const snap = await get(ref(db, "orders/" + orderId));
+  return snap.exists() ? snap.val() : null;
+}
+
+
+
+// ============================
+// USER PROFILE
+// ============================
+export async function getUserProfile(uid) {
+  const snap = await get(ref(db, "users/" + uid));
+  return snap.exists() ? snap.val() : null;
+}
+
+
+
+// ============================
+// QR ENCODE / DECODE
+// ============================
+export function createQR(orderId) {
+  return JSON.stringify({ type: "order", orderId });
+}
+
+export async function scanOrderQR(decoded) {
+  try {
+    const obj = JSON.parse(decoded);
+    if (obj.type === "order") {
+      return await getOrderById(obj.orderId);
+    }
+  } catch (e) {
+    return null;
+  }
+  return null;
 }
