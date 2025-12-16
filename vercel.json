@@ -12,6 +12,8 @@
     { "src": "/admin-login", "dest": "/admin-login.html" },
     { "src": "/admin-register", "dest": "/admin-register.html" },
     { "src": "/admin-confirm", "dest": "/admin-confirm.html" },
+    { "src": "/tv-antrian", "dest": "/tv-antrian.html" },
+    { "src": "/antrian", "dest": "/antrian.html" },
     { "src": "/js/(.*)", "dest": "/js/$1" }
   ]
 }

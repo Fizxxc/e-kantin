@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitor Antrian Kantin</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-black text-white min-h-screen flex items-center justify-center">
+<div class="text-center">
+
+<h1 class="text-4xl font-bold mb-6">ANTRIAN SAAT INI</h1>
+
+<div id="currentQueue" class="text-[8rem] font-extrabold text-indigo-400 animate-pulse">—</div>
+
+<div id="status" class="text-xl mt-4 text-gray-300">Menunggu panggilan...</div>
+
+</div>
+
+<script type="module">
+import { listenOrders } from "./js/firebase.js";
+
+listenOrders(orders=>{
+  const called = orders
+    .filter(o=>o.status==="called")
+    .sort((a,b)=>b.calledAt-a.calledAt)[0];
+
+  if(called){
+    document.getElementById("currentQueue").textContent = called.called;
+    document.getElementById("status").textContent = "Silakan ke kasir";
+  }
+});
+</script>
+</body>
+</html>

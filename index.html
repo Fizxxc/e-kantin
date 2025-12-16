@@ -104,6 +104,23 @@
     </div>
   </div>
 
+  <section class="bg-white rounded-xl shadow p-4 max-w-md mx-auto mt-6">
+  <h2 class="text-lg font-bold text-center mb-3">📢 Antrian Kantin</h2>
+
+  <!-- Antrian Dipanggil -->
+  <div class="bg-indigo-600 text-white rounded-xl p-4 text-center mb-4">
+    <div class="text-sm">Sedang Dipanggil</div>
+    <div id="currentQueue" class="text-5xl font-bold">-</div>
+  </div>
+
+  <!-- Status User -->
+  <div class="border rounded-xl p-3">
+    <div class="text-sm text-gray-500">Status Pesanan Anda</div>
+    <div id="userStatus" class="font-semibold text-lg">Memuat...</div>
+    <div id="userQueue" class="text-indigo-600 font-bold mt-1"></div>
+  </div>
+</section>
+
 <script type="module">
 import {
   listenMenu, placeOrder, listenOrders,
@@ -322,6 +339,51 @@ listenOrders(list => {
       }
     }
   });
+});
+
+// antiran logic
+let myUid = null;
+
+// ambil UID user
+authState(user => {
+  if (!user) return;
+  myUid = user.uid;
+});
+
+// realtime orders
+listenOrders(orders => {
+  if (!orders.length) return;
+
+  // 🔔 Cari antrian yang sedang dipanggil (terbesar & aktif)
+  const called = orders
+    .filter(o => o.called)
+    .sort((a,b)=>b.called - a.called)[0];
+
+  document.getElementById("currentQueue").textContent =
+    called ? called.called : "-";
+
+  // 👤 Cari order milik user
+  const myOrder = orders
+    .filter(o => o.userId === myUid)
+    .sort((a,b)=>b.createdAt - a.createdAt)[0];
+
+  if (!myOrder) {
+    userStatus.textContent = "Belum memesan";
+    userQueue.textContent = "";
+    return;
+  }
+
+  // status text
+  let statusText = "Menunggu";
+  if (myOrder.status === "called") statusText = "Dipanggil";
+  if (myOrder.status === "done") statusText = "Selesai";
+
+  userStatus.textContent = statusText;
+
+  // nomor antrian
+  userQueue.textContent = myOrder.called
+    ? "Nomor Antrian: " + myOrder.called
+    : "Menunggu dipanggil";
 });
 
 // expose to window (agar onclick bekerja)

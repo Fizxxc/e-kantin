@@ -1,454 +1,195 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin Kantin — Dashboard Pro</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Kantin — Dashboard</title>
 
-  <!-- Tailwind + SweetAlert2 + LordIcon + html5-qrcode -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="https://cdn.lordicon.com/lusqsztk.js"></script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
 
-  <style>
-    body { background: linear-gradient(180deg,#f8fafc,#eef2ff); font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto; }
-    .card { transition: transform .16s ease, box-shadow .16s ease; }
-    .card:hover { transform: translateY(-6px); box-shadow: 0 12px 30px rgba(2,6,23,0.08); }
-    /* small helper */
-    .small { font-size:.85rem; }
-    /* mobile-first grid adjustments handled by Tailwind classes */
-  </style>
+<style>
+body{background:#f1f5f9}
+.card{transition:.15s}
+.card:hover{transform:translateY(-4px)}
+</style>
 </head>
+
 <body class="min-h-screen">
 
-  <div class="max-w-7xl mx-auto p-4 sm:p-6">
-    <!-- Header -->
-    <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-      <div class="flex items-center gap-3">
-        <div class="rounded-full bg-indigo-600 p-2">
-          <lord-icon src="https://cdn.lordicon.com/tdrtiskw.json" trigger="hover" style="width:36px;height:36px"></lord-icon>
-        </div>
-        <div>
-          <h1 class="text-xl font-bold">Admin Kantin — Dashboard Pro</h1>
-          <div id="adminEmail" class="text-sm text-slate-600">memuat...</div>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <button id="scanToggle" class="px-3 py-2 bg-amber-500 text-white rounded shadow">Start Scanner</button>
-        <button id="autoCallToggle" class="px-3 py-2 bg-indigo-600 text-white rounded shadow">Auto-call: OFF</button>
-        <button id="logoutBtn" class="px-3 py-2 bg-red-600 text-white rounded shadow">Logout</button>
-      </div>
-    </header>
-
-    <!-- Main grid -->
-    <main class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      <!-- Left: Menu management -->
-      <section class="lg:col-span-2 bg-white p-4 rounded-xl shadow">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="font-semibold">Kelola Menu</h2>
-          <div class="flex gap-2">
-            <button id="btnAddMenu" class="px-3 py-2 bg-green-600 text-white rounded">Tambah Menu</button>
-            <button id="btnRefreshMenu" class="px-3 py-2 bg-gray-100 rounded">Refresh</button>
-          </div>
-        </div>
-
-        <div id="menuList" class="space-y-3 max-h-[56vh] overflow-auto"></div>
-      </section>
-
-      <!-- Right Top: Orders -->
-      <aside class="bg-white p-4 rounded-xl shadow flex flex-col gap-3">
-        <div class="flex items-center justify-between">
-          <h2 class="font-semibold">Daftar Pesanan</h2>
-          <div class="text-sm text-slate-500">Realtime</div>
-        </div>
-
-        <div class="flex gap-2">
-          <input id="nextCall" type="number" value="1"
-                 class="p-2 border rounded w-24 small" />
-          <button id="btnRefreshOrders" class="px-3 py-2 bg-indigo-600 text-white rounded">Refresh</button>
-          <button id="btnExpireOld" class="px-3 py-2 bg-gray-200 rounded small">Expire >24h</button>
-        </div>
-
-        <div id="ordersList" class="space-y-2 overflow-auto max-h-[48vh]"></div>
-      </aside>
-
-      <!-- Right Bottom: Scanner & preview -->
-      <section class="lg:col-span-1 bg-white p-4 rounded-xl shadow">
-        <h3 class="font-semibold mb-3">Scanner</h3>
-        <div id="reader" class="rounded overflow-hidden w-full" style="height:260px"></div>
-        <div id="qrPreview" class="mt-3 text-sm text-slate-600">Tidak ada scan</div>
-      </section>
-    </main>
+<!-- HEADER -->
+<header class="bg-white shadow p-4 flex justify-between items-center">
+  <div>
+    <h1 class="text-xl font-bold">Admin Kantin</h1>
+    <div id="adminEmail" class="text-sm text-gray-500">memuat...</div>
   </div>
+  <div class="flex gap-2">
+    <button id="scanBtn" class="px-3 py-2 bg-amber-500 text-white rounded">Scan QR</button>
+    <button id="logoutBtn" class="px-3 py-2 bg-red-600 text-white rounded">Logout</button>
+  </div>
+</header>
 
-  <!-- Menu Modal -->
-  <div id="menuModal" class="fixed inset-0 hidden items-center justify-center p-4 z-50 bg-black/40">
-    <div class="bg-white w-full max-w-2xl rounded-xl p-4 shadow-lg">
-      <h3 id="menuModalTitle" class="text-lg font-semibold mb-3">Tambah Menu</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <input id="mTitle" placeholder="Nama menu" class="p-2 border rounded" />
-        <input id="mPrice" placeholder="Harga" type="number" class="p-2 border rounded" />
+<!-- MAIN -->
+<main class="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+<!-- MENU -->
+<section class="bg-white rounded-xl p-4 shadow lg:col-span-1">
+  <div class="flex justify-between mb-3">
+    <h2 class="font-semibold">Menu</h2>
+    <button onclick="openMenu()" class="px-3 py-1 bg-indigo-600 text-white rounded">Tambah</button>
+  </div>
+  <div id="menuList" class="space-y-3"></div>
+</section>
+
+<!-- ORDERS -->
+<section class="bg-white rounded-xl p-4 shadow lg:col-span-2">
+  <h2 class="font-semibold mb-3">Pesanan Masuk</h2>
+  <div id="orderList" class="space-y-3 max-h-[70vh] overflow-auto"></div>
+</section>
+
+</main>
+
+<!-- MODAL MENU -->
+<div id="menuModal" class="fixed inset-0 hidden bg-black/40 flex items-center justify-center">
+<div class="bg-white p-4 rounded-xl w-full max-w-md">
+<h3 id="menuTitle" class="font-bold mb-3">Tambah Menu</h3>
+<input id="mName" placeholder="Nama" class="w-full border p-2 mb-2 rounded">
+<input id="mPrice" type="number" placeholder="Harga" class="w-full border p-2 mb-2 rounded">
+<textarea id="mDesc" placeholder="Deskripsi" class="w-full border p-2 mb-2 rounded"></textarea>
+<input id="mImg" type="file" accept="image/*" class="mb-3">
+
+<div class="flex justify-end gap-2">
+<button onclick="closeMenu()" class="px-3 py-2 bg-gray-300 rounded">Batal</button>
+<button id="saveMenu" class="px-3 py-2 bg-indigo-600 text-white rounded">Simpan</button>
+</div>
+</div>
+</div>
+
+<!-- QR MODAL -->
+<div id="qrModal" class="fixed inset-0 hidden bg-black/50 flex items-center justify-center">
+<div class="bg-white p-4 rounded-xl w-full max-w-sm">
+<h3 class="font-bold mb-2">Scan QR Order</h3>
+<div id="reader" class="w-full"></div>
+<button onclick="closeQR()" class="mt-3 w-full bg-red-500 text-white py-2 rounded">Tutup</button>
+</div>
+</div>
+
+<script type="module">
+import {
+  authState, logout, isAdmin,
+  listenMenu, addMenu, updateMenu, deleteMenu, uploadImage,
+  listenOrders, callQueue, updateOrder
+} from "./js/firebase.js";
+
+let menus=[], orders=[], editId=null;
+let lastQueue=0;
+let qr=null;
+
+// ===== AUTH =====
+authState(async u=>{
+  if(!u) return location.href="/admin-login";
+  if(!(await isAdmin(u.uid))){
+    await Swal.fire("Akses ditolak","","error");
+    return location.href="/";
+  }
+  adminEmail.textContent=u.email;
+  init();
+});
+
+// ===== INIT =====
+function init(){
+  listenMenu(list=>{menus=list;renderMenu()});
+  listenOrders(list=>{
+    orders=list.sort((a,b)=>a.createdAt-b.createdAt);
+    lastQueue=Math.max(0,...orders.map(o=>o.called||0));
+    renderOrders();
+  });
+}
+
+// ===== MENU =====
+function renderMenu(){
+  menuList.innerHTML=menus.map(m=>`
+  <div class="card p-3 border rounded">
+    <div class="font-semibold">${m.title}</div>
+    <div class="text-sm">Rp ${Number(m.price).toLocaleString()}</div>
+    <div class="flex gap-2 mt-2">
+      <button onclick="editMenu('${m.id}')" class="text-sm bg-yellow-400 px-2 rounded">Edit</button>
+      <button onclick="removeMenu('${m.id}')" class="text-sm bg-red-500 text-white px-2 rounded">Hapus</button>
+    </div>
+  </div>`).join('');
+}
+
+window.openMenu=()=>{menuModal.classList.remove("hidden");editId=null}
+window.closeMenu=()=>menuModal.classList.add("hidden");
+
+window.editMenu=id=>{
+  const m=menus.find(x=>x.id===id);
+  editId=id;
+  mName.value=m.title;
+  mPrice.value=m.price;
+  mDesc.value=m.desc||"";
+  openMenu();
+};
+
+window.removeMenu=async id=>{
+  if((await Swal.fire({title:"Hapus?",showCancelButton:true})).isConfirmed)
+    await deleteMenu(id);
+};
+
+saveMenu.onclick=async()=>{
+  const img=mImg.files[0];
+  let url="";
+  if(img) url=await uploadImage(img,"menu");
+  const data={title:mName.value,price:+mPrice.value,desc:mDesc.value,imageUrl:url};
+  editId?await updateMenu(editId,data):await addMenu(data);
+  closeMenu();
+};
+
+// ===== ORDERS =====
+function renderOrders(){
+  orderList.innerHTML=orders.map(o=>`
+  <div class="card p-3 border rounded">
+    <div class="flex justify-between">
+      <div>
+        <div class="font-semibold">Order ${o.id}</div>
+        <div class="text-sm">Total Rp ${Number(o.total).toLocaleString()}</div>
       </div>
-      <textarea id="mDesc" placeholder="Deskripsi" class="w-full p-2 border rounded mt-3"></textarea>
-      <div class="mt-3 flex items-center gap-3">
-        <label class="block">
-          <span class="text-sm text-slate-600">Gambar</span>
-          <input id="mImage" type="file" accept="image/*" class="mt-1" />
-        </label>
-        <div class="ml-auto flex gap-2">
-          <button class="px-3 py-2 bg-gray-200 rounded" onclick="closeMenuModal()">Batal</button>
-          <button id="saveMenuBtn" class="px-3 py-2 bg-indigo-600 text-white rounded">Simpan</button>
-        </div>
+      <div class="flex gap-2">
+        <button onclick="verify('${o.id}')" class="px-2 py-1 bg-blue-600 text-white rounded text-xs">Verifikasi</button>
+        <button onclick="call('${o.id}')" class="px-2 py-1 bg-green-600 text-white rounded text-xs">Panggil</button>
       </div>
     </div>
-  </div>
+    ${o.called?`<div class="mt-2 text-indigo-600 font-bold">No ${o.called}</div>`:""}
+  </div>`).join('');
+}
 
-  <!-- Toast container (simple) -->
-  <div id="toast" class="fixed right-4 bottom-6 z-60 space-y-2"></div>
+window.call=async id=>{
+  lastQueue++;
+  await callQueue(id,lastQueue);
+  speechSynthesis.speak(new SpeechSynthesisUtterance(`Nomor ${lastQueue}`));
+};
 
-  <script type="module">
-  // -------------------------
-  // Admin Dashboard - Final
-  // -------------------------
-  import {
-    authState, isAdmin, logout,
-    listenMenu, addMenu, updateMenu, deleteMenu, uploadImage,
-    listenOrders, callQueue, updateOrder, getOrderById, markOrderPaid
-  } from "./js/firebase.js";
+window.verify=id=>{
+  location.href=`/admin-confirm?order=${id}`;
+};
 
-  // State
-  let currentUser = null;
-  let menus = [];
-  let orders = [];
-  let editId = null;
-  let scanner = null;
-  let autoCall = false;
-  let newOrderSound = null;
-
-  // DOM refs
-  const menuListEl = document.getElementById("menuList");
-  const ordersListEl = document.getElementById("ordersList");
-  const readerEl = document.getElementById("reader");
-  const qrPreviewEl = document.getElementById("qrPreview");
-  const nextCallInput = document.getElementById("nextCall");
-
-  // Load small beep sound (base64 short beep)
-  newOrderSound = new Audio("data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAA..."); // placeholder (optional)
-  // NOTE: if you want real sound, replace the base64 above with a valid sound; silent placeholder avoids CORS.
-
-  // Utility: Toast (small)
-  function toast(text, type="info", ttl=3000){
-    const d = document.createElement("div");
-    d.className = "bg-white px-4 py-2 rounded shadow small";
-    d.innerHTML = `<div class="flex items-center gap-2"><div class="font-medium">${text}</div></div>`;
-    document.getElementById("toast").appendChild(d);
-    setTimeout(()=> d.remove(), ttl);
-  }
-
-  // Protect admin route & initialize
-  authState(async (u) => {
-    if (!u) {
-      location.href = "/admin-login";
-      return;
-    }
-    const ok = await isAdmin(u.uid);
-    if (!ok) {
-      await Swal.fire("Akses ditolak", "Anda bukan admin", "error");
-      location.href = "/admin-login";
-      return;
-    }
-    currentUser = u;
-    document.getElementById("adminEmail").textContent = u.email;
-    initRealtime();
-    startQRScanner();
+// ===== QR =====
+scanBtn.onclick=()=>{
+  qrModal.classList.remove("hidden");
+  qr=new Html5Qrcode("reader");
+  qr.start({facingMode:"environment"},{fps:10,qrbox:250},txt=>{
+    qr.stop();
+    closeQR();
+    location.href=`/admin-confirm?order=${txt}`;
   });
+};
 
-  // Initialize realtime listeners
-  function initRealtime(){
-    // loading placeholders
-    menuListEl.innerHTML = `<div class="text-slate-500">Memuat menu...</div>`;
-    ordersListEl.innerHTML = `<div class="text-slate-500">Memuat pesanan...</div>`;
+window.closeQR=()=>{qrModal.classList.add("hidden");qr?.stop()};
 
-    listenMenu(list => {
-      menus = list.sort((a,b)=> (a.createdAt||0) - (b.createdAt||0));
-      renderMenus();
-    });
+// ===== LOGOUT =====
+logoutBtn.onclick=async()=>{await logout();location.href="/"};
 
-    listenOrders(list => {
-      orders = list.sort((a,b)=> (a.createdAt||0) - (b.createdAt||0));
-      renderOrders();
-      handleNewOrdersNotification(list);
-    });
-  }
-
-  // Render menus
-  function renderMenus(){
-    if(!menus.length){
-      menuListEl.innerHTML = `<div class="text-slate-500">Belum ada menu</div>`;
-      return;
-    }
-    menuListEl.innerHTML = menus.map(m => `
-      <div class="card p-3 border rounded flex gap-3 items-center">
-        <img src="${m.imageUrl || 'https://via.placeholder.com/120'}" class="w-28 h-20 object-cover rounded"/>
-        <div class="flex-1">
-          <div class="font-semibold">${escapeHtml(m.title)}</div>
-          <div class="text-sm text-slate-500">Rp ${Number(m.price).toLocaleString()}</div>
-          <div class="text-sm text-slate-700 mt-1">${escapeHtml(m.desc||'')}</div>
-        </div>
-        <div class="flex flex-col gap-2">
-          <button class="px-3 py-1 bg-yellow-400 rounded" onclick="editMenu('${m.id}')">Edit</button>
-          <button class="px-3 py-1 bg-red-500 text-white rounded" onclick="removeMenu('${m.id}')">Hapus</button>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  // Render orders
-  function renderOrders(){
-    if(!orders.length){
-      ordersListEl.innerHTML = `<div class="text-slate-500">Belum ada pesanan</div>`;
-      return;
-    }
-
-    ordersListEl.innerHTML = orders.map(o => {
-      const status = o.status || "pending";
-      const statusColor = status === "called" ? "bg-amber-100" : status === "done" ? "bg-green-50" : status==="paid" ? "bg-blue-50" : "bg-white";
-      const calledBadge = o.called ? `<div class="px-2 py-1 text-xs rounded bg-indigo-600 text-white">No ${o.called}</div>` : '';
-      return `
-        <div class="p-3 border rounded ${statusColor}">
-          <div class="flex justify-between items-start gap-3">
-            <div>
-              <div class="font-semibold">User: ${o.userId}</div>
-              <div class="text-xs text-slate-500">${new Date(o.createdAt).toLocaleString()}</div>
-              <div class="text-sm mt-2">${(o.items||[]).map(it=>`${it.title} x${it.qty}`).join(", ")}</div>
-              <div class="text-sm mt-2">Total: Rp ${Number(o.total || 0).toLocaleString()}</div>
-            </div>
-            <div class="flex flex-col items-end gap-2">
-              ${calledBadge}
-              <div class="flex gap-2">
-                <button class="px-2 py-1 text-xs bg-indigo-600 text-white rounded" onclick="verifyOrder('${o.id}')">Verifikasi</button>
-                <button class="px-2 py-1 text-xs bg-green-600 text-white rounded" onclick="callOrder('${o.id}')">Panggil</button>
-                <button class="px-2 py-1 text-xs bg-gray-300 rounded" onclick="finishOrder('${o.id}')">Selesai</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  // *******************
-  // Menu modal controls
-  // *******************
-  window.editMenu = (id) => {
-    const m = menus.find(x=>x.id===id);
-    if(!m) return;
-    editId = id;
-    document.getElementById("menuModalTitle").textContent = "Edit Menu";
-    document.getElementById("mTitle").value = m.title || "";
-    document.getElementById("mPrice").value = m.price || "";
-    document.getElementById("mDesc").value = m.desc || "";
-    document.getElementById("menuModal").classList.remove("hidden");
-  };
-
-  window.openAddMenu = () => {
-    editId = null;
-    document.getElementById("menuModalTitle").textContent = "Tambah Menu";
-    document.getElementById("mTitle").value = "";
-    document.getElementById("mPrice").value = "";
-    document.getElementById("mDesc").value = "";
-    document.getElementById("mImage").value = "";
-    document.getElementById("menuModal").classList.remove("hidden");
-  };
-
-  window.closeMenuModal = () => document.getElementById("menuModal").classList.add("hidden");
-
-  document.getElementById("saveMenuBtn").addEventListener("click", async () => {
-    const title = document.getElementById("mTitle").value.trim();
-    const price = Number(document.getElementById("mPrice").value);
-    const desc = document.getElementById("mDesc").value.trim();
-    const file = document.getElementById("mImage").files[0];
-
-    if(!title || !price) return Swal.fire("Error","Nama & harga wajib diisi","error");
-
-    Swal.fire({ title:"Menyimpan...", didOpen: ()=> Swal.showLoading() });
-    try{
-      let imageUrl = "";
-      if(file) imageUrl = await uploadImage(file, "menu");
-      const payload = { title, price, desc, imageUrl, createdAt: Date.now() };
-      if(editId) await updateMenu(editId, payload);
-      else await addMenu(payload);
-      Swal.close(); Swal.fire("Sukses","Menu tersimpan","success");
-      closeMenuModal();
-    }catch(e){
-      console.error(e); Swal.fire("Error","Gagal menyimpan menu","error");
-    }
-  });
-
-  window.removeMenu = async (id) => {
-    const r = await Swal.fire({ title:"Hapus menu?", icon:"warning", showCancelButton:true });
-    if(r.isConfirmed){
-      try{ await deleteMenu(id); Swal.fire("Dihapus","Menu dihapus","success"); }catch(e){ Swal.fire("Error","Gagal hapus","error"); }
-    }
-  };
-
-  // *******************
-  // Orders actions
-  // *******************
-  window.callOrder = async (id) => {
-    try{
-      const q = Number(nextCallInput.value||"1");
-      await callQueue(id, q);
-      nextCallInput.value = q + 1;
-      // TTS & sound
-      const text = `Nomor antrian ${q}, pesanan sudah siap.`;
-      speak(text);
-      toast(`Dipanggil: ${q}`);
-    }catch(e){
-      console.error(e); Swal.fire("Error","Gagal panggil","error");
-    }
-  };
-
-  window.finishOrder = async (id) => {
-    try{
-      await updateOrder(id, { status: "done", doneAt: Date.now() });
-      toast("Order ditandai selesai");
-    }catch(e){ console.error(e); Swal.fire("Error","Gagal update","error"); }
-  };
-
-  window.verifyOrder = async (id) => {
-    // fetch order details then mark paid
-    try{
-      const o = await getOrderById(id);
-      if(!o) return Swal.fire("Error","Order tidak ditemukan","error");
-      const r = await Swal.fire({
-        title: "Verifikasi Pembayaran",
-        html: `<div class="text-sm">Order ID: <b>${id}</b></div><div class="text-sm">Total: Rp ${Number(o.total||0).toLocaleString()}</div>`,
-        showCancelButton: true,
-        confirmButtonText: "Lunas & Beri Nomor"
-      });
-      if(r.isConfirmed){
-        await markOrderPaid(id);
-        toast("Pembayaran diverifikasi");
-      }
-    }catch(e){ console.error(e); Swal.fire("Error","Gagal verifikasi","error"); }
-  };
-
-  // Auto-notify new orders
-  let knownOrders = new Set();
-  function handleNewOrdersNotification(list){
-    list.forEach(o=>{
-      if(!knownOrders.has(o.id)){
-        knownOrders.add(o.id);
-        // new order just arrived
-        notifyNewOrder(o);
-      }
-    });
-  }
-
-  function notifyNewOrder(o){
-    try{ if(newOrderSound) newOrderSound.play().catch(()=>{}); }catch(e){}
-    toast(`Order baru dari ${o.userId}`, "info", 4000);
-    // desktop notification
-    if("Notification" in window){
-      if(Notification.permission === "granted") new Notification("Order Baru", { body: `User ${o.userId} — Rp ${Number(o.total||0).toLocaleString()}` });
-      else if(Notification.permission !== "denied") Notification.requestPermission();
-    }
-  }
-
-  // *******************
-  // QR Scanner
-  // *******************
-  let scannerActive = false;
-  async function startQRScanner(){
-    if(scannerActive) return;
-    try{
-      scanner = new Html5Qrcode("reader");
-      await scanner.start({ facingMode: "environment" }, { fps: 8, qrbox: { width: 300, height: 200 } }, decoded => {
-        // decoded payload: if format ORDER:ID or JSON
-        qrPreviewEl.innerHTML = `QR Terdeteksi: <b>${escapeHtml(decoded)}</b>`;
-        // accept both ORDER:id and raw id
-        let orderId = null;
-        if(decoded.startsWith("ORDER:")) orderId = decoded.replace("ORDER:","");
-        else {
-          try{ const p=JSON.parse(decoded); if(p.orderId) orderId=p.orderId; }catch(e){}
-        }
-        if(orderId){
-          // redirect to admin-confirm or open modal
-          location.href = `/admin-confirm?order=${encodeURIComponent(orderId)}`;
-          scanner.stop().catch(()=>{});
-        }
-      });
-      scannerActive = true;
-      document.getElementById("scanToggle").textContent = "Stop Scanner";
-    }catch(e){
-      console.error("Scanner error", e);
-      Swal.fire("Error","Tidak dapat memulai scanner (izin/camera)","error");
-    }
-  }
-
-  async function stopQRScanner(){
-    if(!scannerActive || !scanner) return;
-    try{ await scanner.stop(); scannerActive = false; document.getElementById("scanToggle").textContent = "Start Scanner"; }catch(e){ console.warn(e); }
-  }
-
-  document.getElementById("scanToggle").addEventListener("click", ()=> {
-    if(scannerActive) stopQRScanner(); else startQRScanner();
-  });
-
-  // *******************
-  // Auto call toggle
-  // *******************
-  document.getElementById("autoCallToggle").addEventListener("click", ()=>{
-    autoCall = !autoCall;
-    document.getElementById("autoCallToggle").textContent = `Auto-call: ${autoCall ? "ON":"OFF"}`;
-  });
-
-  // *******************
-  // Manual refresh & expire
-  // *******************
-  document.getElementById("btnRefreshMenu").addEventListener("click", ()=> listenMenu(list=>{ menus=list; renderMenus(); }));
-  document.getElementById("btnRefreshOrders").addEventListener("click", ()=> listenOrders(list=>{ orders=list.sort((a,b)=>a.createdAt-b.createdAt); renderOrders(); }));
-  document.getElementById("btnExpireOld").addEventListener("click", expireOldOrders);
-
-  async function expireOldOrders(){
-    const cutoff = Date.now() - (24*60*60*1000); // 24h
-    const old = orders.filter(o => (o.createdAt||0) < cutoff && (o.status==='pending' || o.status==='waiting'));
-    if(!old.length) return Swal.fire("Info","Tidak ada order lama untuk di-expire","info");
-    const r = await Swal.fire({ title:`Expire ${old.length} order?`, showCancelButton:true });
-    if(!r.isConfirmed) return;
-    for(const o of old){
-      try{ await updateOrder(o.id, { status: "expired", expiredAt: Date.now() }); }catch(e){ console.warn(e); }
-    }
-    toast(`${old.length} order di-expire`);
-  }
-
-  // *******************
-  // Logout
-  // *******************
-  document.getElementById("logoutBtn").addEventListener("click", async ()=> {
-    await logout();
-    location.href = "/admin-login";
-  });
-
-  // *******************
-  // Helpers
-  // *******************
-  function escapeHtml(s=''){ return String(s).replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])); }
-
-  function speak(text){
-    try{
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = "id-ID";
-      speechSynthesis.speak(u);
-    }catch(e){ console.warn("TTS error", e); }
-  }
-
-  // initial small safety: set knownOrders from existing orders so only new trigger causes notif
-  listenOrders(list => { list.forEach(o => knownOrders.add(o.id)); });
-
-  </script>
+</script>
 </body>
 </html>

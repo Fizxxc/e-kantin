@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Status Antrian</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-100 min-h-screen flex items-center justify-center">
+<div class="bg-white rounded-xl shadow p-6 w-full max-w-md text-center">
+
+<h1 class="text-xl font-bold mb-4">Status Antrian</h1>
+
+<div class="text-gray-600 mb-2">Antrian dipanggil</div>
+<div id="called" class="text-5xl font-bold text-indigo-600">—</div>
+
+<hr class="my-4">
+
+<div class="text-gray-600 mb-2">Antrian Anda</div>
+<div id="mine" class="text-3xl font-bold">—</div>
+
+</div>
+
+<script type="module">
+import { listenOrders } from "./js/firebase.js";
+
+const params = new URLSearchParams(location.search);
+const orderId = params.get("order");
+
+listenOrders(list=>{
+  const called = list.filter(o=>o.status==="called").sort((a,b)=>b.calledAt-a.calledAt)[0];
+  if(called) document.getElementById("called").textContent = called.called;
+
+  if(orderId){
+    const mine = list.find(o=>o.id===orderId);
+    if(mine?.called) document.getElementById("mine").textContent = mine.called;
+  }
+});
+</script>
+</body>
+</html>
