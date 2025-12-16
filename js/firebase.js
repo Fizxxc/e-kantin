@@ -164,23 +164,24 @@ export async function deleteOrder(orderId) {
 // TEMPAT ORDER USER (FINAL FIX)
 // ============================
 export async function placeOrder(userId, order) {
+  const counterRef = ref(db, "queueCounter/current");
+
+  // 🔒 atomic increment (AMAN walau ramai)
+  const queueNumber = await runTransaction(counterRef, current => {
+    return (current || 0) + 1;
+  });
+
   const id = push(ref(db, "orders")).key;
 
   const data = {
     id,
     userId,
+    queue: queueNumber.snapshot.val(), // ⬅️ REALTIME
     items: order.items,
     total: order.total,
-    createdAt: Date.now(),
     status: "pending",
-
-    // FIX agar sesuai user.html
-    payment: {
-      method: order.payment.method,
-      status: order.payment.status
-    },
-
-    queue: Math.floor(1000 + Math.random() * 9000),
+    payment: order.payment,
+    createdAt: Date.now(),
     called: false
   };
 
@@ -190,14 +191,15 @@ export async function placeOrder(userId, order) {
 
 
 
+
 // ============================
 // QUEUE CALL SYSTEM
 // ============================
-export async function callQueue(orderId, queueNumber) {
+export async function callQueue(orderId, queueNumber){
   await update(ref(db, "orders/" + orderId), {
-    called: queueNumber,
-    calledAt: Date.now(),
-    status: "called"
+    status: "called",
+    called: queueNumber,   // nomor antrian
+    calledAt: Date.now()
   });
 }
 

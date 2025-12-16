@@ -323,23 +323,46 @@ authState(u => {
   }
 });
 
-// NOTIFICATIONS ON ORDER CALLED
-listenOrders(list => {
-  if(!user) return;
+// ================= REALTIME QUEUE NOTIFICATION =================
+let lastNotifiedQueue = null;
 
-  list.forEach(o=>{
-    if(o.userId === user.uid && o.called && !o._notified){
-      o._notified = true;
-      const text = `Nomor antrian Anda: ${o.queue}`;
-      Swal.fire({ icon:'info', title:'Dipanggil', text });
-      if("speechSynthesis" in window){
-        let s = new SpeechSynthesisUtterance(text);
-        s.lang = 'id-ID';
-        speechSynthesis.speak(s);
-      }
+listenOrders(orders => {
+  if (!user) return;
+  if (!orders || orders.length === 0) return;
+
+  // ambil order TERBARU milik user
+  const myOrder = orders
+    .filter(o => o.userId === user.uid)
+    .sort((a,b)=>b.createdAt - a.createdAt)[0];
+
+  if (!myOrder) return;
+
+  // 🔔 jika baru dipanggil
+  if (
+    myOrder.status === "called" &&
+    myOrder.queue !== lastNotifiedQueue
+  ) {
+    lastNotifiedQueue = myOrder.queue;
+
+    const text = `Nomor antrian Anda ${myOrder.queue}, silakan ke kasir`;
+
+    Swal.fire({
+      icon: "info",
+      title: "Antrian Dipanggil",
+      text,
+      confirmButtonText: "Siap"
+    });
+
+    // 🔊 Voice
+    if ("speechSynthesis" in window) {
+      speechSynthesis.cancel();
+      const s = new SpeechSynthesisUtterance(text);
+      s.lang = "id-ID";
+      speechSynthesis.speak(s);
     }
-  });
+  }
 });
+
 
 // antiran logic
 let myUid = null;
